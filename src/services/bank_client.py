@@ -118,15 +118,26 @@ class BankClient:
                 
                 data = response.json()
                 consent_id = data.get("consent_id")
+                consent_status = data.get("status", "unknown")
                 
                 if not consent_id:
-                    raise ValueError("Consent ID не получен")
+                    # В SBank может быть только request_id без consent_id (pending)
+                    if consent_status == "pending":
+                        logger.warning(f"⚠️  Consent pending в банке {bank_id} - требуется ручное подтверждение")
+                        # Используем request_id как временный consent
+                        consent_id = data.get("request_id", f"pending_{bank_id}_{user_id}")
+                    else:
+                        raise ValueError("Consent ID не получен")
                 
                 # Сохраняем в Redis с TTL 4 часа
                 consent_key = f"consent:{user_id}:{bank_id}"
                 self.redis_client.setex(consent_key, settings.CONSENT_REQUEST_TTL, consent_id)
                 
-                logger.info(f"✅ Создан consent {consent_id} для банка {bank_id}")
+                if consent_status == "approved":
+                    logger.info(f"✅ Consent {consent_id} одобрен для банка {bank_id}")
+                else:
+                    logger.warning(f"⚠️  Consent {consent_id} в статусе: {consent_status}")
+                
                 return consent_id
                 
         except Exception as e:

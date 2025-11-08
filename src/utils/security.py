@@ -17,6 +17,9 @@ def hash_password(password: str) -> str:
     Returns:
         str: Хешированный пароль
     """
+    # bcrypt имеет лимит 72 байта
+    if len(password) > 72:
+        password = password[:72]
     return pwd_context.hash(password)
 
 

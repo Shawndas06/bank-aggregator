@@ -1,17 +1,28 @@
-# 📚 API Documentation для Frontend разработчика
+# 📚 API Documentation для Frontend
 
 ## Base URL
 ```
 http://localhost:8000
 ```
 
-## Формат ответов
+## 🔐 Credentials (VTB Hackathon 2025)
 
-### ✅ Успешный ответ
+```
+Team ID:     team222
+Team Secret: Wl1F0L2aVHOPE20rM0DFeqvP9Qr2pgQT
+```
+
+Backend уже настроен с этими credentials!
+
+---
+
+## 📋 Формат ответов
+
+### ✅ Успех
 ```json
 {
   "success": true,
-  "data": { ... }
+  "data": {...}
 }
 ```
 
@@ -30,12 +41,10 @@ http://localhost:8000
 ## 🔐 Аутентификация
 
 ### 1. Регистрация
-```
+```http
 POST /api/auth/sign-up
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "email": "user@example.com",
   "password": "Password123",
@@ -56,29 +65,25 @@ POST /api/auth/sign-up
 }
 ```
 
-**Примечание:** `otpCode` возвращается только в режиме разработки.
-
 ---
 
-### 2. Подтверждение Email
-```
+### 2. Подтверждение Email (OTP)
+```http
 POST /api/auth/verify-email
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "email": "user@example.com",
   "code": "123456"
 }
 ```
 
-**Response (200):**
+**Response (200) + Cookie `session-id`:**
 ```json
 {
   "success": true,
   "data": {
-    "message": "Email подтверждён! Вы автоматически вошли в систему.",
+    "message": "Email подтверждён!",
     "user": {
       "id": 1,
       "name": "Иван Иванов",
@@ -89,24 +94,20 @@ POST /api/auth/verify-email
 }
 ```
 
-**Cookie:** Устанавливается `session-id` (httpOnly)
-
 ---
 
 ### 3. Вход
-```
+```http
 POST /api/auth/sign-in
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "email": "user@example.com",
   "password": "Password123"
 }
 ```
 
-**Response (200):**
+**Response (200) + Cookie `session-id`:**
 ```json
 {
   "success": true,
@@ -122,21 +123,11 @@ POST /api/auth/sign-in
 }
 ```
 
-**Cookie:** Устанавливается `session-id` (httpOnly)
-
-**Ошибки:**
-- 401: Неверный email или пароль
-- 403: Аккаунт не подтверждён
-
 ---
 
 ### 4. Текущий пользователь
-```
+```http
 GET /api/auth/me
-```
-
-**Headers:**
-```
 Cookie: session-id=...
 ```
 
@@ -156,12 +147,8 @@ Cookie: session-id=...
 ---
 
 ### 5. Выход
-```
+```http
 POST /api/auth/logout
-```
-
-**Headers:**
-```
 Cookie: session-id=...
 ```
 
@@ -180,18 +167,10 @@ Cookie: session-id=...
 ## 💳 Счета
 
 ### 1. Список счетов
-```
+```http
 GET /api/accounts
-GET /api/accounts?client_id=1
-```
-
-**Headers:**
-```
 Cookie: session-id=...
 ```
-
-**Query params:**
-- `client_id` (optional): ID банка для фильтрации (1=VBank, 2=SBank, 3=ABank)
 
 **Response (200):**
 ```json
@@ -199,8 +178,8 @@ Cookie: session-id=...
   "success": true,
   "data": [
     {
-      "accountId": "vbank_acc_001",
-      "accountName": "Основной счёт",
+      "accountId": "acc-3311",
+      "accountName": "Checking счет",
       "clientId": 1,
       "clientName": "vbank",
       "isActive": true
@@ -209,20 +188,19 @@ Cookie: session-id=...
 }
 ```
 
+**С фильтром по банку:**
+```http
+GET /api/accounts?client_id=1
+```
+
 ---
 
 ### 2. Создать счёт
-```
+```http
 POST /api/accounts
-```
-
-**Headers:**
-```
 Cookie: session-id=...
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "client_id": 1
 }
@@ -235,8 +213,8 @@ Cookie: session-id=...
   "data": {
     "message": "Счёт успешно создан",
     "account": {
-      "accountId": "vbank_acc_001",
-      "accountName": "Основной счёт",
+      "accountId": "acc-3311",
+      "accountName": "Checking счет",
       "clientId": 1,
       "isActive": true
     }
@@ -244,20 +222,19 @@ Cookie: session-id=...
 }
 ```
 
+**Доступные банки:**
+- `1` - VBank
+- `2` - SBank  
+- `3` - ABank
+
 ---
 
 ### 3. Привязать счёт
-```
+```http
 POST /api/accounts/attach
-```
-
-**Headers:**
-```
 Cookie: session-id=...
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "id": 1
 }
@@ -277,28 +254,18 @@ Cookie: session-id=...
 ---
 
 ### 4. Информация о счёте
-```
+```http
 GET /api/accounts/{account_id}?client_id=1
-```
-
-**Headers:**
-```
 Cookie: session-id=...
 ```
-
-**Path params:**
-- `account_id`: ID счёта
-
-**Query params:**
-- `client_id`: ID банка (обязательно)
 
 **Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "accountId": "vbank_acc_001",
-    "accountName": "Основной счёт",
+    "accountId": "acc-3311",
+    "accountName": "Checking счет",
     "clientId": 1,
     "clientName": "vbank",
     "isActive": true
@@ -309,12 +276,8 @@ Cookie: session-id=...
 ---
 
 ### 5. Баланс счёта
-```
+```http
 GET /api/accounts/{account_id}/balances?client_id=1
-```
-
-**Headers:**
-```
 Cookie: session-id=...
 ```
 
@@ -323,21 +286,19 @@ Cookie: session-id=...
 {
   "success": true,
   "data": {
-    "amount": 1500.50,
-    "currency": "EUR"
+    "amount": 15432.50,
+    "currency": "RUB"
   }
 }
 ```
 
+**⚡ Кешируется на 4 часа!**
+
 ---
 
 ### 6. Транзакции счёта
-```
+```http
 GET /api/accounts/{account_id}/transactions?client_id=1
-```
-
-**Headers:**
-```
 Cookie: session-id=...
 ```
 
@@ -347,60 +308,29 @@ Cookie: session-id=...
   "success": true,
   "data": [
     {
-      "id": "txn_12345",
-      "date": "2024-11-08T10:30:00",
+      "id": "txn-12345",
+      "date": "2025-11-08T10:30:00",
       "description": "Покупка в магазине",
-      "amount": -50.00,
-      "currency": "EUR",
+      "amount": -500.00,
+      "currency": "RUB",
       "type": "debit"
     }
   ]
 }
 ```
 
+**⚡ Кешируется на 4 часа!**
+
 ---
 
 ## 👥 Группы
 
-### 1. Список групп
-```
-GET /api/groups
-```
-
-**Headers:**
-```
-Cookie: session-id=...
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Моя семья",
-      "ownerId": 1,
-      "createdAt": "2024-11-08T10:00:00"
-    }
-  ]
-}
-```
-
----
-
-### 2. Создать группу
-```
+### 1. Создать группу
+```http
 POST /api/groups
-```
-
-**Headers:**
-```
 Cookie: session-id=...
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "name": "Моя семья"
 }
@@ -414,18 +344,38 @@ Cookie: session-id=...
     "id": 1,
     "name": "Моя семья",
     "ownerId": 1,
-    "createdAt": "2024-11-08T10:00:00"
+    "createdAt": "2025-11-08T10:00:00"
   }
 }
 ```
 
-**Ошибки:**
-- 400: Достигнут лимит групп (1 для free, 5 для premium)
+---
+
+### 2. Список групп
+```http
+GET /api/groups
+Cookie: session-id=...
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Моя семья",
+      "ownerId": 1,
+      "createdAt": "2025-11-08T10:00:00"
+    }
+  ]
+}
+```
 
 ---
 
 ### 3. Настройки групп
-```
+```http
 GET /api/groups/settings
 ```
 
@@ -448,183 +398,12 @@ GET /api/groups/settings
 
 ---
 
-### 4. Удалить группу
-```
-DELETE /api/groups
-```
-
-**Headers:**
-```
-Cookie: session-id=...
-```
-
-**Body:**
-```json
-{
-  "groupId": 1
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Группа успешно удалена"
-  }
-}
-```
-
-**Ошибки:**
-- 400: Только владелец может удалить группу
-
----
-
-### 5. Выйти из группы
-```
-POST /api/groups/exit
-```
-
-**Headers:**
-```
-Cookie: session-id=...
-```
-
-**Body:**
-```json
-{
-  "groupId": 1
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Вы успешно вышли из группы"
-  }
-}
-```
-
-**Ошибки:**
-- 400: Владелец не может выйти из группы
-
----
-
-### 6. Счета группы
-```
-GET /api/groups/{group_id}/accounts
-```
-
-**Headers:**
-```
-Cookie: session-id=...
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "owner": {
-        "name": "Иван"
-      },
-      "clientId": "1",
-      "clientName": "vbank",
-      "accountId": "vbank_acc_001",
-      "accountName": "Основной счёт"
-    }
-  ]
-}
-```
-
----
-
-### 7. Балансы группы
-```
-GET /api/groups/{group_id}/accounts/balances
-GET /api/groups/{group_id}/accounts/balances?client_id=1
-```
-
-**Headers:**
-```
-Cookie: session-id=...
-```
-
-**Query params:**
-- `client_id` (optional): Фильтр по банку
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "clientId": "1",
-      "name": "vbank",
-      "accountName": "Основной счёт",
-      "owner": {
-        "name": "Иван"
-      },
-      "balance": {
-        "amount": 1200.50,
-        "currency": "EUR"
-      }
-    }
-  ]
-}
-```
-
----
-
-### 8. Транзакции группы
-```
-GET /api/groups/{group_id}/accounts/transactions
-GET /api/groups/{group_id}/accounts/transactions?client_id=1
-```
-
-**Headers:**
-```
-Cookie: session-id=...
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "txn_12345",
-      "date": "2024-11-08T10:30:00",
-      "description": "Покупка",
-      "amount": -50.00,
-      "currency": "EUR",
-      "type": "debit",
-      "owner": {
-        "name": "Иван"
-      },
-      "accountName": "Основной счёт"
-    }
-  ]
-}
-```
-
----
-
-### 9. Пригласить в группу
-```
+### 4. Пригласить в группу
+```http
 POST /api/groups/invite
-```
-
-**Headers:**
-```
 Cookie: session-id=...
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "group_id": 1,
   "email": "friend@example.com"
@@ -642,25 +421,14 @@ Cookie: session-id=...
 }
 ```
 
-**Ошибки:**
-- 400: Пользователь не найден
-- 400: Пользователь уже в группе
-- 400: Достигнут лимит членов
-
 ---
 
-### 10. Принять приглашение
-```
+### 5. Принять приглашение
+```http
 POST /api/groups/invite/accept
-```
-
-**Headers:**
-```
 Cookie: session-id=...
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "request_id": 1
 }
@@ -678,110 +446,160 @@ Cookie: session-id=...
 
 ---
 
-### 11. Отклонить приглашение
-```
+### 6. Отклонить приглашение
+```http
 POST /api/groups/invite/decline
-```
-
-**Headers:**
-```
 Cookie: session-id=...
-```
+Content-Type: application/json
 
-**Body:**
-```json
 {
   "request_id": 1
 }
+```
+
+---
+
+### 7. Счета группы
+```http
+GET /api/groups/{group_id}/accounts
+Cookie: session-id=...
 ```
 
 **Response (200):**
 ```json
 {
   "success": true,
-  "data": {
-    "message": "Приглашение отклонено"
-  }
+  "data": [
+    {
+      "owner": {
+        "name": "Иван"
+      },
+      "clientId": "1",
+      "clientName": "vbank",
+      "accountId": "acc-3311",
+      "accountName": "Checking счет"
+    }
+  ]
 }
 ```
 
 ---
 
-## 🏦 Банки
+### 8. Балансы группы
+```http
+GET /api/groups/{group_id}/accounts/balances
+Cookie: session-id=...
+```
 
-### Список доступных банков
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "clientId": "1",
+      "name": "vbank",
+      "accountName": "Checking счет",
+      "owner": {
+        "name": "Иван"
+      },
+      "balance": {
+        "amount": 15000.50,
+        "currency": "RUB"
+      }
+    }
+  ]
+}
+```
 
-| ID | Название | Код |
-|----|----------|-----|
-| 1  | VBank    | vbank |
-| 2  | SBank    | sbank |
-| 3  | ABank    | abank |
+---
+
+### 9. Транзакции группы
+```http
+GET /api/groups/{group_id}/accounts/transactions
+Cookie: session-id=...
+```
+
+---
+
+### 10. Удалить группу
+```http
+DELETE /api/groups
+Cookie: session-id=...
+Content-Type: application/json
+
+{
+  "groupId": 1
+}
+```
+
+---
+
+### 11. Выйти из группы
+```http
+POST /api/groups/exit
+Cookie: session-id=...
+Content-Type: application/json
+
+{
+  "groupId": 1
+}
+```
+
+---
+
+## 🏦 Интеграция с банками
+
+Backend интегрирован с **реальными OpenBanking API**:
+
+| Банк | URL | Авто-одобрение |
+|------|-----|----------------|
+| VBank | vbank.open.bankingapi.ru | ✅ Да |
+| ABank | abank.open.bankingapi.ru | ✅ Да |
+| SBank | sbank.open.bankingapi.ru | ⚠️ Требует подтверждения |
+
+### Как это работает:
+
+1. **Получение токена** (23 часа кеш)
+2. **Создание consent** (4 часа кеш)
+3. **Запрос данных** (4 часа кеш)
+
+Все операции **автоматические** - Frontend просто вызывает эндпоинты!
 
 ---
 
 ## 🍪 Работа с Cookie
 
-### Frontend (JavaScript/Fetch)
+### JavaScript (Fetch)
 ```javascript
 fetch('http://localhost:8000/api/auth/me', {
-  credentials: 'include'  // ВАЖНО!
+  credentials: 'include'
 })
 ```
 
-### Frontend (Axios)
+### JavaScript (Axios)
 ```javascript
 axios.defaults.withCredentials = true;
 ```
 
 ---
 
-## ⚠️ Важные моменты
+## 🎯 Naming Convention
 
-1. **Все защищённые эндпоинты требуют cookie `session-id`**
-   - Устанавливается автоматически после `/sign-in` или `/verify-email`
-   - Время жизни: 24 часа
-
-2. **Naming convention**
-   - API использует `camelCase` для полей
-   - Примеры: `birthDate`, `accountType`, `isActive`
-
-3. **Mock данные**
-   - Все банковские данные (счета, балансы, транзакции) - mock
-   - Достаточно для полноценной разработки Frontend
-
-4. **Кеширование**
-   - Балансы и транзакции кешируются на 4 часа
-   - Повторные запросы возвращают кешированные данные
-
-5. **Лимиты Free аккаунта**
-   - 1 группа
-   - 2 члена в группе
-
-6. **CORS**
-   - Разрешены origins: `localhost:3000`, `localhost:5173`, `localhost:8080`
+- **API**: `camelCase` (birthDate, accountType, isActive)
+- **БД**: `snake_case` (birth_date, account_type, is_active)
 
 ---
 
-## 📞 Тестирование через curl
+## 📞 Swagger UI
 
-```bash
-# Регистрация
-curl -X POST http://localhost:8000/api/auth/sign-up \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"Test123456","name":"Test","birthDate":"2000-01-01"}'
-
-# Вход (получаем cookie)
-curl -X POST http://localhost:8000/api/auth/sign-in \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"Test123456"}' \
-  -c cookies.txt
-
-# Список счетов (используем cookie)
-curl http://localhost:8000/api/accounts \
-  -b cookies.txt
+Интерактивная документация:
+```
+http://localhost:8000/docs
 ```
 
+Можно тестировать все эндпоинты прямо в браузере!
+
 ---
 
-**Backend готов! Swagger UI: http://localhost:8000/docs** 🚀
-
+**Backend готов! Все данные реальные из банков VBank, ABank, SBank!** 🚀

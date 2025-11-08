@@ -1,8 +1,7 @@
 """
 Схемы для групп
-РАЗРАБОТЧИКИ: EZIRA (основная логика), BAGA (приглашения)
 """
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
@@ -14,13 +13,12 @@ class GroupCreateRequest(BaseModel):
 
 class GroupResponse(BaseModel):
     """Информация о группе"""
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    
     id: int
     name: str
-    owner_id: int
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
+    owner_id: int = Field(..., serialization_alias='ownerId')
+    created_at: datetime = Field(..., serialization_alias='createdAt')
 
 
 class GroupListResponse(BaseModel):
@@ -36,21 +34,27 @@ class GroupSettingsResponse(BaseModel):
 
 class InviteRequest(BaseModel):
     """Запрос на приглашение в группу"""
-    group_id: int
+    model_config = ConfigDict(populate_by_name=True)
+    
+    group_id: int = Field(..., alias='groupId')
     email: EmailStr
 
 
 class InviteActionRequest(BaseModel):
     """Запрос на принятие/отклонение приглашения"""
-    request_id: int
+    model_config = ConfigDict(populate_by_name=True)
+    
+    request_id: int = Field(..., alias='requestId')
 
 
 class GroupMemberResponse(BaseModel):
     """Информация о члене группы"""
-    user_id: int
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    
+    user_id: int = Field(..., serialization_alias='userId')
     name: str
     email: str
-    joined_at: datetime
+    joined_at: datetime = Field(..., serialization_alias='joinedAt')
 
 
 class GroupAccountOwnerResponse(BaseModel):
@@ -61,17 +65,19 @@ class GroupAccountOwnerResponse(BaseModel):
 class GroupAccountResponse(BaseModel):
     """Счет в группе"""
     owner: GroupAccountOwnerResponse
-    client_id: str
-    client_name: str
+    client_id: str = Field(..., serialization_alias='clientId')
+    client_name: str = Field(..., serialization_alias='clientName')
 
 
 class GroupExitRequest(BaseModel):
     """Запрос на выход из группы"""
-    group_id: int
+    model_config = ConfigDict(populate_by_name=True)
+    
+    group_id: int = Field(..., alias='groupId')
 
 
 class GroupDeleteRequest(BaseModel):
     """Запрос на удаление группы"""
-    group_id: int
-
-
+    model_config = ConfigDict(populate_by_name=True)
+    
+    group_id: int = Field(..., alias='groupId')

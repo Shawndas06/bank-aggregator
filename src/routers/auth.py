@@ -80,17 +80,8 @@ async def verify_email(
     # Создаём сессию и автоматически логиним
     session_id = SessionService.create_session(redis_client, user.id)
     
-    # Устанавливаем cookie
-    response.set_cookie(
-        key="session-id",
-        value=session_id,
-        max_age=settings.SESSION_EXPIRE_HOURS * 3600,
-        httponly=True,
-        secure=not settings.DEBUG,  # True в production
-        samesite="lax"
-    )
-    
-    return success_response({
+    # Создаём ответ
+    json_response = success_response({
         "message": "Email подтверждён! Вы автоматически вошли в систему.",
         "user": {
             "id": user.id,
@@ -99,6 +90,18 @@ async def verify_email(
             "accountType": user.account_type.value
         }
     })
+    
+    # Устанавливаем cookie в response
+    json_response.set_cookie(
+        key="session-id",
+        value=session_id,
+        max_age=settings.SESSION_EXPIRE_HOURS * 3600,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="lax"
+    )
+    
+    return json_response
 
 
 @router.post("/sign-in")
@@ -118,17 +121,8 @@ async def sign_in(
     # Создаём сессию
     session_id = SessionService.create_session(redis_client, user.id)
     
-    # Устанавливаем cookie
-    response.set_cookie(
-        key="session-id",
-        value=session_id,
-        max_age=settings.SESSION_EXPIRE_HOURS * 3600,
-        httponly=True,
-        secure=not settings.DEBUG,
-        samesite="lax"
-    )
-    
-    return success_response({
+    # Создаём ответ
+    json_response = success_response({
         "message": "Вход выполнен успешно",
         "user": {
             "id": user.id,
@@ -137,6 +131,18 @@ async def sign_in(
             "accountType": user.account_type.value
         }
     })
+    
+    # Устанавливаем cookie
+    json_response.set_cookie(
+        key="session-id",
+        value=session_id,
+        max_age=settings.SESSION_EXPIRE_HOURS * 3600,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="lax"
+    )
+    
+    return json_response
 
 
 @router.get("/me")
@@ -162,9 +168,12 @@ async def logout(
     if session_id:
         SessionService.delete_session(redis_client, session_id)
     
-    # Удаляем cookie
-    response.delete_cookie("session-id")
-    
-    return success_response({
+    # Создаём ответ
+    json_response = success_response({
         "message": "Выход выполнен успешно"
     })
+    
+    # Удаляем cookie
+    json_response.delete_cookie("session-id")
+    
+    return json_response

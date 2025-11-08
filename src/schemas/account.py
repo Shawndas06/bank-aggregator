@@ -1,8 +1,7 @@
 """
 Схемы для банковских счетов
-РАЗРАБОТЧИК: EZIRA
 """
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -15,7 +14,9 @@ class BankInfo(BaseModel):
 
 class AccountCreateRequest(BaseModel):
     """Запрос на создание счета"""
-    client_id: int
+    model_config = ConfigDict(populate_by_name=True)
+    
+    client_id: int = Field(..., alias='clientId')
 
 
 class AccountAttachRequest(BaseModel):
@@ -41,14 +42,13 @@ class TransactionResponse(BaseModel):
 
 class AccountResponse(BaseModel):
     """Информация о счете"""
-    account_id: str
-    client_id: int
-    client_name: str
-    account_name: Optional[str] = None
-    is_active: bool
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
     
-    class Config:
-        from_attributes = True
+    account_id: str = Field(..., serialization_alias='accountId')
+    client_id: int = Field(..., serialization_alias='clientId')
+    client_name: str = Field(..., serialization_alias='clientName')
+    account_name: Optional[str] = Field(None, serialization_alias='accountName')
+    is_active: bool = Field(..., serialization_alias='isActive')
 
 
 class AccountListResponse(BaseModel):
@@ -58,5 +58,7 @@ class AccountListResponse(BaseModel):
 
 class ConsentRequest(BaseModel):
     """Запрос на создание consent"""
-    bank_id: int
-    permissions: List[str]  # ["accounts", "balances", "transactions"]
+    model_config = ConfigDict(populate_by_name=True)
+    
+    bank_id: int = Field(..., alias='bankId')
+    permissions: List[str]

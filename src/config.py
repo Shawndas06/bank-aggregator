@@ -12,15 +12,15 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/bank_aggregator"
-    DATABASE_HOST: str = "localhost"
+    DATABASE_URL: str = "postgresql://postgres:password@postgres:5432/bank_aggregator"
+    DATABASE_HOST: str = "postgres"
     DATABASE_PORT: int = 5432
     DATABASE_NAME: str = "bank_aggregator"
-    DATABASE_USER: str = "user"
+    DATABASE_USER: str = "postgres"
     DATABASE_PASSWORD: str = "password"
     
     # Redis
-    REDIS_HOST: str = "localhost"
+    REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     REDIS_PASSWORD: str = ""

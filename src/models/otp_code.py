@@ -20,7 +20,14 @@ class OTPCode(Base):
     
     def is_expired(self) -> bool:
         """Проверка истёк ли код"""
-        return datetime.utcnow() > self.expires_at
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
+        # Если expires_at без timezone, добавляем UTC
+        if self.expires_at.tzinfo is None:
+            expires_aware = self.expires_at.replace(tzinfo=timezone.utc)
+        else:
+            expires_aware = self.expires_at
+        return now > expires_aware
     
     def is_valid(self, code: str) -> bool:
         """Проверка валидности кода"""
@@ -33,7 +40,8 @@ class OTPCode(Base):
     @staticmethod
     def create_expiry_time() -> datetime:
         """Создаёт время истечения (10 минут от текущего момента)"""
-        return datetime.utcnow() + timedelta(minutes=10)
+        from datetime import timezone
+        return datetime.now(timezone.utc) + timedelta(minutes=10)
     
     def __repr__(self):
         return f"<OTPCode(email={self.email}, expired={self.is_expired()})>"
