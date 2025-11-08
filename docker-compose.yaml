@@ -77,7 +77,9 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./logs:/app/logs
+      - .:/app  # Монтируем весь код для hot reload
+      - /app/__pycache__  # Исключаем кеш Python
+      - /app/.pytest_cache  # Исключаем кеш pytest
     networks:
       - bank_network
     restart: unless-stopped
