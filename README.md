@@ -107,9 +107,11 @@ POST   /api/groups/exit
 
 | Банк | ID | URL | Статус |
 |------|-----|-----|---------|
-| VBank | 1 | vbank.open.bankingapi.ru | ✅ Авто-одобрение |
-| SBank | 2 | sbank.open.bankingapi.ru | ⚠️ Ручное одобрение |
-| ABank | 3 | abank.open.bankingapi.ru | ✅ Авто-одобрение |
+| VBank | 1 | vbank.open.bankingapi.ru | ✅ Протестирован |
+| SBank (Сбербанк) | 2 | sbank.open.bankingapi.ru | ✅ Протестирован |
+| ABank | 3 | abank.open.bankingapi.ru | ✅ Протестирован |
+
+**Все 3 банка полностью работают!**
 
 ---
 

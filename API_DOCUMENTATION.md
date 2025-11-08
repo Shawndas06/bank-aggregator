@@ -729,9 +729,11 @@ const response = await axios.get('http://localhost:8000/api/accounts');
 
 | ID | Название | URL | Статус |
 |----|----------|-----|--------|
-| 1 | VBank | vbank.open.bankingapi.ru | ✅ Работает |
-| 2 | SBank | sbank.open.bankingapi.ru | ⚠️ Ручное одобрение |
-| 3 | ABank | abank.open.bankingapi.ru | ✅ Работает |
+| 1 | VBank | vbank.open.bankingapi.ru | ✅ Протестирован |
+| 2 | SBank (Сбербанк) | sbank.open.bankingapi.ru | ✅ Протестирован |
+| 3 | ABank | abank.open.bankingapi.ru | ✅ Протестирован |
+
+**Все 3 банка полностью работают!**
 
 ---
 
