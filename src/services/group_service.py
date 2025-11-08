@@ -51,6 +51,8 @@ class GroupService:
         group_id: int,
         user_id: int
     ) -> Tuple[bool, Optional[str]]:
+        from src.models.invitation import Invitation
+        
         group = db.query(Group).filter(Group.id == group_id).first()
 
         if not group:
@@ -59,6 +61,7 @@ class GroupService:
         if group.owner_id != user_id:
             return False, "Только владелец может удалить группу"
 
+        db.query(Invitation).filter(Invitation.group_id == group_id).delete()
         db.query(GroupMember).filter(GroupMember.group_id == group_id).delete()
 
         db.delete(group)

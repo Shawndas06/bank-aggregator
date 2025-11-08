@@ -71,8 +71,14 @@ async def get_groups(
 @router.get("/settings")
 async def get_group_settings():
     settings_data = {
-        "free": ACCOUNT_LIMITS["free"],
-        "premium": ACCOUNT_LIMITS["premium"]
+        "free": {
+            "maxGroups": 1,
+            "maxMembers": 2
+        },
+        "premium": {
+            "maxGroups": 5,
+            "maxMembers": 20
+        }
     }
 
     return success_response(settings_data)
@@ -119,24 +125,6 @@ async def get_group_accounts(
     accounts = GroupService.get_group_accounts(db, group_id)
 
     return success_response(accounts)
-
-@router.get("/{group_id}/accounts/{client_id}")
-async def get_group_account_details(
-    group_id: int = Path(...),
-    client_id: str = Path(...),
-    current_user: User = Depends(get_current_verified_user),
-    db: Session = Depends(get_db)
-):
-    if not GroupService.is_user_member(db, group_id, current_user.id):
-        return error_response("Вы не являетесь членом этой группы", 403)
-
-    accounts = GroupService.get_group_accounts(db, group_id)
-
-    for account in accounts:
-        if account["clientId"] == client_id:
-            return success_response(account)
-
-    return error_response("Счёт не найден", 404)
 
 @router.get("/{group_id}/accounts/balances")
 async def get_group_balances(
@@ -219,6 +207,24 @@ async def get_group_transactions(
     all_transactions.sort(key=lambda x: x.get("date", ""), reverse=True)
 
     return success_response(all_transactions)
+
+@router.get("/{group_id}/accounts/{client_id}")
+async def get_group_account_details(
+    group_id: int = Path(...),
+    client_id: str = Path(...),
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    if not GroupService.is_user_member(db, group_id, current_user.id):
+        return error_response("Вы не являетесь членом этой группы", 403)
+
+    accounts = GroupService.get_group_accounts(db, group_id)
+
+    for account in accounts:
+        if account["clientId"] == client_id:
+            return success_response(account)
+
+    return error_response("Счёт не найден", 404)
 
 @router.get("/invites")
 async def get_my_invitations(
