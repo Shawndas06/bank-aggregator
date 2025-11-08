@@ -129,3 +129,54 @@ async def get_account_transactions(
     transactions = service.get_account_transactions(current_user.id, account_id, client_id)
 
     return success_response(transactions)
+
+@router.get("/balances/all")
+async def get_all_balances(
+    client_ids: Optional[str] = Query(None, description="ID банков через запятую (1,2,3)"),
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
+
+    bank_ids = None
+    if client_ids:
+        try:
+            bank_ids = [int(x.strip()) for x in client_ids.split(',')]
+        except ValueError:
+            return error_response("Неверный формат client_ids. Используйте: 1,2,3", 400)
+
+    balances = service.get_all_user_balances(current_user.id, bank_ids)
+
+    return success_response(balances)
+
+@router.get("/transactions/all")
+async def get_all_transactions(
+    client_ids: Optional[str] = Query(None, description="ID банков через запятую (1,2,3)"),
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
+    limit: int = Query(20, ge=1, le=100, description="Количество записей (max 100)"),
+    start_date: Optional[str] = Query(None, description="Дата начала (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Дата окончания (YYYY-MM-DD)"),
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
+
+    bank_ids = None
+    if client_ids:
+        try:
+            bank_ids = [int(x.strip()) for x in client_ids.split(',')]
+        except ValueError:
+            return error_response("Неверный формат client_ids. Используйте: 1,2,3", 400)
+
+    transactions = service.get_all_user_transactions(
+        current_user.id,
+        bank_ids,
+        offset,
+        limit,
+        start_date,
+        end_date
+    )
+
+    return success_response(transactions)

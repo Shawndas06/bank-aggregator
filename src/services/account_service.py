@@ -207,3 +207,140 @@ class AccountService:
             3: "abank"
         }
         return bank_names.get(bank_id, f"bank{bank_id}")
+
+    def get_all_user_balances(
+        self,
+        user_id: int,
+        bank_ids: Optional[List[int]] = None
+    ) -> Dict[str, Any]:
+        """
+        Получить балансы всех счетов пользователя.
+        Оптимизировано для избежания N+1 проблемы.
+        """
+        accounts = self.get_user_accounts(user_id, None)
+
+        if bank_ids:
+            accounts = [acc for acc in accounts if acc["clientId"] in bank_ids]
+
+        balances_data = []
+        total_balance = {}
+
+        for account in accounts:
+            try:
+                balance = self.get_account_balance(
+                    user_id,
+                    account["accountId"],
+                    account["clientId"]
+                )
+
+                balance_item = {
+                    "accountId": account["accountId"],
+                    "accountName": account["accountName"],
+                    "clientId": account["clientId"],
+                    "clientName": account["clientName"],
+                    "balance": balance
+                }
+                balances_data.append(balance_item)
+
+                currency = balance.get("currency", "RUB")
+                amount = balance.get("amount", 0)
+
+                if currency not in total_balance:
+                    total_balance[currency] = 0
+                total_balance[currency] += amount
+
+            except Exception as e:
+                logger.error(f"Ошибка получения баланса для {account['accountId']}: {e}")
+                continue
+
+        return {
+            "accounts": balances_data,
+            "total": [{"currency": curr, "amount": amt} for curr, amt in total_balance.items()],
+            "count": len(balances_data)
+        }
+
+    def get_all_user_transactions(
+        self,
+        user_id: int,
+        bank_ids: Optional[List[int]] = None,
+        offset: int = 0,
+        limit: int = 20,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Получить транзакции всех счетов пользователя с пагинацией и фильтрацией.
+        Оптимизировано для избежания N+1 проблемы.
+        """
+        from datetime import datetime
+
+        accounts = self.get_user_accounts(user_id, None)
+
+        if bank_ids:
+            accounts = [acc for acc in accounts if acc["clientId"] in bank_ids]
+
+        all_transactions = []
+
+        for account in accounts:
+            try:
+                transactions = self.get_account_transactions(
+                    user_id,
+                    account["accountId"],
+                    account["clientId"]
+                )
+
+                for txn in transactions:
+                    txn["accountId"] = account["accountId"]
+                    txn["accountName"] = account["accountName"]
+                    txn["clientId"] = account["clientId"]
+                    txn["clientName"] = account["clientName"]
+
+                all_transactions.extend(transactions)
+
+            except Exception as e:
+                logger.error(f"Ошибка получения транзакций для {account['accountId']}: {e}")
+                continue
+
+        if start_date or end_date:
+            filtered_transactions = []
+            for txn in all_transactions:
+                txn_date_str = txn.get("date", "")
+                if not txn_date_str:
+                    continue
+
+                try:
+                    txn_date = datetime.fromisoformat(txn_date_str.replace('Z', '+00:00'))
+                    txn_date_only = txn_date.date()
+
+                    if start_date:
+                        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+                        if txn_date_only < start:
+                            continue
+
+                    if end_date:
+                        end = datetime.strptime(end_date, "%Y-%m-%d").date()
+                        if txn_date_only > end:
+                            continue
+
+                    filtered_transactions.append(txn)
+
+                except Exception as e:
+                    logger.warning(f"Ошибка парсинга даты {txn_date_str}: {e}")
+                    filtered_transactions.append(txn)
+
+            all_transactions = filtered_transactions
+
+        all_transactions.sort(key=lambda x: x.get("date", ""), reverse=True)
+
+        total_count = len(all_transactions)
+        paginated_transactions = all_transactions[offset:offset + limit]
+
+        return {
+            "transactions": paginated_transactions,
+            "pagination": {
+                "offset": offset,
+                "limit": limit,
+                "total": total_count,
+                "hasMore": offset + limit < total_count
+            }
+        }
