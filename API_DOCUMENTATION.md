@@ -52,6 +52,13 @@
 }
 ```
 
+**⚠️ ВАЖНО для Frontend:** 
+- Email **НЕ отправляется** (хардкод для разработки)
+- OTP код возвращается в ответе API → используйте поле `otpCode`
+- В DEBUG режиме код всегда: **"123456"**
+- Можно автоматически подставить код или показать пользователю
+- Для production: добавим реальную отправку email, тогда `otpCode` будет `null`
+
 ---
 
 #### 2. POST `/api/auth/verify-email` - Подтверждение email
@@ -878,6 +885,26 @@ export const authAPI = {
   signIn: (data: SignInData) => api.post('/api/auth/sign-in', data),
   getMe: () => api.get('/api/auth/me'),
   logout: () => api.post('/api/auth/logout'),
+};
+
+// Пример флоу регистрации с OTP
+export const registerUser = async (userData: SignUpData) => {
+  // 1. Регистрация
+  const signUpResponse = await authAPI.signUp(userData);
+  
+  // 2. Получить OTP код из ответа (для dev режима)
+  const otpCode = signUpResponse.data.otpCode; // "123456"
+  
+  // 3. Автоматически подтвердить или показать пользователю
+  if (otpCode) {
+    // Development: автоматически подставить код
+    await authAPI.verifyEmail({
+      email: userData.email,
+      otpCode: otpCode
+    });
+  }
+  
+  return signUpResponse;
 };
 
 // api/accounts.ts
