@@ -24,7 +24,7 @@
 
 ---
 
-## 📚 Все API Эндпоинты (26 штук)
+## 📚 Все API Эндпоинты (28 штук)
 
 ### 🔐 Authentication (5 эндпоинтов)
 
@@ -51,6 +51,13 @@
   }
 }
 ```
+
+**⚠️ ВАЖНО для Frontend:** 
+- Email **НЕ отправляется** (хардкод для разработки)
+- OTP код возвращается в ответе API → используйте поле `otpCode`
+- В DEBUG режиме код всегда: **"123456"**
+- Можно автоматически подставить код или показать пользователю
+- Для production: добавим реальную отправку email, тогда `otpCode` будет `null`
 
 ---
 
@@ -149,7 +156,11 @@
 
 ---
 
-### 💳 Accounts - Счета (6 эндпоинтов)
+### 💳 Accounts - Счета (8 эндпоинтов)
+
+**⚡ НОВЫЕ эндпоинты для решения N+1 проблемы:**
+- `/api/accounts/balances/all` - Балансы всех банков одним запросом
+- `/api/accounts/transactions/all` - Транзакции с пагинацией и фильтрами
 
 #### 6. POST `/api/accounts` - Создать счет
 
@@ -317,6 +328,201 @@
     }
   ]
 }
+```
+
+---
+
+#### ⚡ 13. GET `/api/accounts/balances/all` - Балансы всех банков (НОВЫЙ!)
+
+**Решает N+1 проблему!** Вместо 3 запросов - делаем 1.
+
+**Query Parameters:**
+- `client_ids` (optional) - ID банков через запятую: `1,2,3`
+
+**Примеры:**
+```bash
+# Все банки
+GET /api/accounts/balances/all
+
+# Только VBank и SBank
+GET /api/accounts/balances/all?client_ids=1,2
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "accounts": [
+      {
+        "accountId": "acc-3311",
+        "accountName": "Checking счет",
+        "clientId": 1,
+        "clientName": "vbank",
+        "balance": {
+          "amount": 117404.06,
+          "currency": "RUB"
+        }
+      },
+      {
+        "accountId": "sbank_acc_001",
+        "accountName": "Основной счёт",
+        "clientId": 2,
+        "clientName": "sbank",
+        "balance": {
+          "amount": 5814.03,
+          "currency": "RUB"
+        }
+      }
+    ],
+    "total": [
+      {
+        "currency": "RUB",
+        "amount": 123218.09
+      }
+    ],
+    "count": 2
+  }
+}
+```
+
+**TypeScript пример:**
+```typescript
+const response = await api.get('/api/accounts/balances/all', {
+  params: { client_ids: '1,2,3' }
+});
+
+const { accounts, total, count } = response.data;
+console.log(`Всего счетов: ${count}`);
+console.log(`Общий баланс: ${total[0].amount} ${total[0].currency}`);
+```
+
+---
+
+#### ⚡ 14. GET `/api/accounts/transactions/all` - Транзакции с пагинацией (НОВЫЙ!)
+
+**Решает N+1 проблему + добавляет пагинацию и фильтры!**
+
+**Query Parameters:**
+- `client_ids` (optional) - ID банков через запятую: `1,2,3`
+- `offset` (optional, default: 0) - Смещение для пагинации
+- `limit` (optional, default: 20, max: 100) - Количество записей
+- `start_date` (optional) - Дата начала в формате `YYYY-MM-DD`
+- `end_date` (optional) - Дата окончания в формате `YYYY-MM-DD`
+
+**Примеры:**
+```bash
+# Первые 20 транзакций
+GET /api/accounts/transactions/all
+
+# Следующие 20 (пагинация)
+GET /api/accounts/transactions/all?offset=20&limit=20
+
+# Только VBank и SBank
+GET /api/accounts/transactions/all?client_ids=1,2
+
+# За ноябрь 2025
+GET /api/accounts/transactions/all?start_date=2025-11-01&end_date=2025-11-30
+
+# Всё вместе
+GET /api/accounts/transactions/all?client_ids=1,2,3&offset=0&limit=20&start_date=2025-01-01&end_date=2025-12-31
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "transactions": [
+      {
+        "id": "tx-vbank-00573612",
+        "date": "2025-11-08T18:50:15.285567Z",
+        "description": "Пятёрочка - Санкт-Петербург",
+        "amount": 565.05,
+        "currency": "RUB",
+        "type": "debit",
+        "accountId": "acc-3311",
+        "accountName": "Checking счет",
+        "clientId": 1,
+        "clientName": "vbank"
+      },
+      {
+        "id": "txn_40793",
+        "date": "2025-11-08T17:42:47.004681",
+        "description": "Снятие наличных",
+        "amount": 520.3,
+        "currency": "RUB",
+        "type": "debit",
+        "accountId": "sbank_acc_001",
+        "accountName": "Основной счёт",
+        "clientId": 2,
+        "clientName": "sbank"
+      }
+    ],
+    "pagination": {
+      "offset": 0,
+      "limit": 20,
+      "total": 156,
+      "hasMore": true
+    }
+  }
+}
+```
+
+**TypeScript пример с пагинацией:**
+```typescript
+const TransactionsList = () => {
+  const [transactions, setTransactions] = useState([]);
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
+
+  const loadPage = async (pageNum: number) => {
+    const response = await api.get('/api/accounts/transactions/all', {
+      params: {
+        client_ids: '1,2,3',
+        offset: pageNum * pageSize,
+        limit: pageSize,
+        start_date: '2025-01-01',
+        end_date: '2025-12-31'
+      }
+    });
+
+    const { transactions, pagination } = response.data;
+    setTransactions(transactions);
+    
+    return pagination;
+  };
+
+  return (
+    <div>
+      {/* Список транзакций */}
+      <button onClick={() => loadPage(page - 1)} disabled={page === 0}>
+        Назад
+      </button>
+      <button onClick={() => loadPage(page + 1)}>
+        Далее
+      </button>
+    </div>
+  );
+};
+```
+
+**⚡ Оптимизация N+1:**
+
+❌ **Было (N+1 проблема):**
+```typescript
+// 3 отдельных запроса!
+const balance1 = await api.get('/api/accounts/acc1/balances?client_id=1');
+const balance2 = await api.get('/api/accounts/acc2/balances?client_id=2');
+const balance3 = await api.get('/api/accounts/acc3/balances?client_id=3');
+// Время: ~900ms
+```
+
+✅ **Стало (оптимизировано):**
+```typescript
+// 1 запрос для всех банков!
+const response = await api.get('/api/accounts/balances/all?client_ids=1,2,3');
+// Время: ~600ms (или ~50ms с кешем)
 ```
 
 ---
@@ -880,6 +1086,26 @@ export const authAPI = {
   logout: () => api.post('/api/auth/logout'),
 };
 
+// Пример флоу регистрации с OTP
+export const registerUser = async (userData: SignUpData) => {
+  // 1. Регистрация
+  const signUpResponse = await authAPI.signUp(userData);
+  
+  // 2. Получить OTP код из ответа (для dev режима)
+  const otpCode = signUpResponse.data.otpCode; // "123456"
+  
+  // 3. Автоматически подтвердить или показать пользователю
+  if (otpCode) {
+    // Development: автоматически подставить код
+    await authAPI.verifyEmail({
+      email: userData.email,
+      otpCode: otpCode
+    });
+  }
+  
+  return signUpResponse;
+};
+
 // api/accounts.ts
 export const accountsAPI = {
   getAll: (clientId?: number) => 
@@ -890,6 +1116,29 @@ export const accountsAPI = {
     api.get(`/api/accounts/${accountId}/balances`, { params: { client_id: clientId } }),
   getTransactions: (accountId: string, clientId: number) =>
     api.get(`/api/accounts/${accountId}/transactions`, { params: { client_id: clientId } }),
+  
+  // ⚡ НОВЫЕ методы (решают N+1 проблему)
+  getAllBalances: (clientIds?: number[]) => 
+    api.get('/api/accounts/balances/all', {
+      params: { client_ids: clientIds?.join(',') }
+    }),
+    
+  getAllTransactions: (params: {
+    clientIds?: number[];
+    offset?: number;
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+  }) => 
+    api.get('/api/accounts/transactions/all', {
+      params: {
+        client_ids: params.clientIds?.join(','),
+        offset: params.offset,
+        limit: params.limit,
+        start_date: params.startDate,
+        end_date: params.endDate
+      }
+    }),
 };
 
 // api/groups.ts
