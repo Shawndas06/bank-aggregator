@@ -1,0 +1,102 @@
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+
+from src.config import settings
+from src.database import create_tables
+from src.redis_client import redis_client
+
+from src.routers import auth, accounts, groups
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🚀 Starting Bank Aggregator API...")
+    print(f"📊 Database: {settings.DATABASE_HOST}:{settings.DATABASE_PORT}")
+    print(f"💾 Redis: {settings.REDIS_HOST}:{settings.REDIS_PORT}")
+
+    create_tables()
+
+    try:
+        redis_client.ping()
+        print("✅ Redis connection successful")
+    except Exception as e:
+        print(f"❌ Redis connection failed: {e}")
+
+    print("✨ Application started successfully!")
+
+    yield
+
+    print("👋 Shutting down Bank Aggregator API...")
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="API для агрегации банковских счетов",
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if settings.DEBUG:
+        print(f"❌ Error: {exc}")
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": {
+                "message": "Что-то пошло не так" if not settings.DEBUG else str(exc)
+            }
+        }
+    )
+
+app.include_router(auth.router)
+app.include_router(accounts.router)
+app.include_router(groups.router)
+
+@app.get("/", tags=["Health"])
+async def health_check():
+    return {
+        "success": True,
+        "data": {
+            "status": "healthy",
+            "app": settings.APP_NAME,
+            "version": settings.APP_VERSION
+        }
+    }
+
+@app.get("/health", tags=["Health"])
+async def health():
+    redis_status = "healthy"
+    try:
+        redis_client.ping()
+    except:
+        redis_status = "unhealthy"
+
+    return {
+        "success": True,
+        "data": {
+            "api": "healthy",
+            "redis": redis_status,
+            "version": settings.APP_VERSION
+        }
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=settings.DEBUG
+    )
