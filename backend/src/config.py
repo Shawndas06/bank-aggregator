@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     SESSION_EXPIRE_HOURS: int = 24
 
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174"
 
     @property
     def allowed_origins_list(self) -> List[str]:
