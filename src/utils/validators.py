@@ -1,0 +1,67 @@
+"""
+Дополнительные валидаторы
+"""
+import re
+from datetime import datetime, date
+from typing import Optional
+
+
+def validate_email(email: str) -> bool:
+    """
+    Проверяет корректность email.
+    
+    Args:
+        email: Email адрес
+    
+    Returns:
+        bool: True если email корректный
+    """
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+
+def validate_password_strength(password: str) -> tuple[bool, Optional[str]]:
+    """
+    Проверяет надежность пароля.
+    
+    Args:
+        password: Пароль
+    
+    Returns:
+        tuple: (bool, Optional[str]) - (валидность, сообщение об ошибке)
+    """
+    if len(password) < 8:
+        return False, "Пароль должен содержать минимум 8 символов"
+    
+    if not re.search(r'[A-Z]', password):
+        return False, "Пароль должен содержать хотя бы одну заглавную букву"
+    
+    if not re.search(r'[a-z]', password):
+        return False, "Пароль должен содержать хотя бы одну строчную букву"
+    
+    if not re.search(r'[0-9]', password):
+        return False, "Пароль должен содержать хотя бы одну цифру"
+    
+    return True, None
+
+
+def validate_age(birth_date: date) -> bool:
+    """
+    Проверяет, что пользователю больше 18 лет.
+    
+    Args:
+        birth_date: Дата рождения
+    
+    Returns:
+        bool: True если возраст >= 18
+    """
+    today = datetime.now().date()
+    age = today.year - birth_date.year
+    
+    # Проверяем, был ли уже день рождения в этом году
+    if (today.month, today.day) < (birth_date.month, birth_date.day):
+        age -= 1
+    
+    return age >= 18
+
+
