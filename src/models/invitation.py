@@ -26,7 +26,7 @@ class Invitation(Base):
     
     # Relationships
     inviter = relationship("User", foreign_keys=[inviter_id], back_populates="sent_invitations")
-    invitee = relationship("User", foreign_keys=[invitee_email], back_populates="received_invitations")
+    # invitee связь не нужна, т.к. invitee_email это просто email, а не foreign key
     
     def __repr__(self):
         return f"<Invitation(id={self.id}, group_id={self.group_id}, status={self.status})>"

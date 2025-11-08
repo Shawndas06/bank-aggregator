@@ -1,13 +1,16 @@
 """
 Сервис для работы с группами
-РАЗРАБОТЧИК: EZIRA
 """
+import logging
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any
 
 from src.models.group import Group, GroupMember
 from src.models.user import User
+from src.models.account import BankAccount
 from src.constants.constants import AccountType, ACCOUNT_LIMITS
+
+logger = logging.getLogger(__name__)
 
 
 class GroupService:
@@ -19,120 +22,212 @@ class GroupService:
         name: str,
         owner_id: int,
         account_type: AccountType
-    ) -> tuple[Optional[Group], Optional[str]]:
+    ) -> Tuple[Optional[Group], Optional[str]]:
         """
-        Создает новую группу
+        Создаёт новую группу
         
-        TODO (EZIRA):
-        1. Проверить лимит групп для типа аккаунта
-        2. Создать группу
-        3. Добавить владельца в члены группы
-        4. Вернуть (Group, None) или (None, error_message)
+        Returns:
+            (Group, None) если успешно
+            (None, error_message) если ошибка
         """
-        # TODO: Implement
-        pass
+        # Проверяем лимит групп
+        existing_groups_count = db.query(Group).filter(Group.owner_id == owner_id).count()
+        max_groups = ACCOUNT_LIMITS[account_type]["max_groups"]
+        
+        if existing_groups_count >= max_groups:
+            return None, f"Достигнут лимит групп ({max_groups}) для вашего типа аккаунта"
+        
+        # Создаём группу
+        group = Group(name=name, owner_id=owner_id)
+        db.add(group)
+        db.flush()  # Чтобы получить ID
+        
+        # Автоматически добавляем владельца в члены группы
+        member = GroupMember(group_id=group.id, user_id=owner_id)
+        db.add(member)
+        
+        db.commit()
+        db.refresh(group)
+        
+        logger.info(f"Создана группа {group.id} для пользователя {owner_id}")
+        return group, None
     
     @staticmethod
     def get_user_groups(db: Session, user_id: int) -> List[Group]:
-        """
-        Получает список групп пользователя
+        """Получает список групп пользователя"""
+        # Получаем группы где пользователь является членом
+        memberships = db.query(GroupMember).filter(GroupMember.user_id == user_id).all()
+        group_ids = [m.group_id for m in memberships]
         
-        TODO (EZIRA):
-        1. Получить все группы, где пользователь является членом
-        2. Вернуть список групп
-        """
-        # TODO: Implement
-        pass
+        groups = db.query(Group).filter(Group.id.in_(group_ids)).all()
+        return groups
     
     @staticmethod
     def delete_group(
         db: Session,
         group_id: int,
         user_id: int
-    ) -> tuple[bool, Optional[str]]:
-        """
-        Удаляет группу
+    ) -> Tuple[bool, Optional[str]]:
+        """Удаляет группу"""
+        group = db.query(Group).filter(Group.id == group_id).first()
         
-        TODO (EZIRA):
-        1. Получить группу
-        2. Проверить, что пользователь - владелец
-        3. Удалить всех членов
-        4. Удалить группу
-        5. Вернуть (True, None) или (False, error_message)
-        """
-        # TODO: Implement
-        pass
+        if not group:
+            return False, "Группа не найдена"
+        
+        if group.owner_id != user_id:
+            return False, "Только владелец может удалить группу"
+        
+        # Удаляем всех членов
+        db.query(GroupMember).filter(GroupMember.group_id == group_id).delete()
+        
+        # Удаляем группу
+        db.delete(group)
+        db.commit()
+        
+        logger.info(f"Группа {group_id} удалена пользователем {user_id}")
+        return True, None
     
     @staticmethod
     def exit_group(
         db: Session,
         group_id: int,
         user_id: int
-    ) -> tuple[bool, Optional[str]]:
-        """
-        Выход из группы
+    ) -> Tuple[bool, Optional[str]]:
+        """Выход из группы"""
+        group = db.query(Group).filter(Group.id == group_id).first()
         
-        TODO (EZIRA):
-        1. Получить группу
-        2. Проверить, что пользователь НЕ владелец
-        3. Удалить членство
-        4. Вернуть (True, None) или (False, error_message)
-        """
-        # TODO: Implement
-        pass
+        if not group:
+            return False, "Группа не найдена"
+        
+        if group.owner_id == user_id:
+            return False, "Владелец не может выйти из группы. Удалите группу."
+        
+        # Удаляем членство
+        membership = (
+            db.query(GroupMember)
+            .filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+            .first()
+        )
+        
+        if not membership:
+            return False, "Вы не являетесь членом этой группы"
+        
+        db.delete(membership)
+        db.commit()
+        
+        logger.info(f"Пользователь {user_id} вышел из группы {group_id}")
+        return True, None
     
     @staticmethod
     def get_group_members(db: Session, group_id: int) -> List[User]:
-        """
-        Получает список членов группы
+        """Получает список членов группы"""
+        memberships = db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
+        user_ids = [m.user_id for m in memberships]
         
-        TODO (EZIRA):
-        1. Получить всех членов группы
-        2. Вернуть список пользователей
+        users = db.query(User).filter(User.id.in_(user_ids)).all()
+        return users
+    
+    @staticmethod
+    def add_member(
+        db: Session,
+        group_id: int,
+        user_email: str,
+        account_type: AccountType
+    ) -> Tuple[bool, Optional[str]]:
         """
-        # TODO: Implement
-        pass
+        Добавляет нового члена в группу
+        
+        Returns:
+            (True, None) если успешно
+            (False, error_message) если ошибка
+        """
+        # Проверяем лимит членов
+        current_members = db.query(GroupMember).filter(GroupMember.group_id == group_id).count()
+        max_members = ACCOUNT_LIMITS[account_type]["max_members"]
+        
+        if current_members >= max_members:
+            return False, f"Достигнут лимит членов группы ({max_members})"
+        
+        # Находим пользователя
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            return False, "Пользователь с таким email не найден"
+        
+        # Проверяем что уже не член
+        existing = (
+            db.query(GroupMember)
+            .filter(GroupMember.group_id == group_id, GroupMember.user_id == user.id)
+            .first()
+        )
+        
+        if existing:
+            return False, "Пользователь уже является членом группы"
+        
+        # Добавляем
+        member = GroupMember(group_id=group_id, user_id=user.id)
+        db.add(member)
+        db.commit()
+        
+        logger.info(f"Пользователь {user.id} добавлен в группу {group_id}")
+        return True, None
+    
+    @staticmethod
+    def get_group_accounts(db: Session, group_id: int) -> List[Dict[str, Any]]:
+        """Получает все счета всех членов группы"""
+        # Получаем всех членов
+        members = GroupService.get_group_members(db, group_id)
+        
+        result = []
+        for member in members:
+            # Получаем счета каждого члена
+            accounts = db.query(BankAccount).filter(BankAccount.user_id == member.id).all()
+            
+            for acc in accounts:
+                result.append({
+                    "owner": {
+                        "name": member.name
+                    },
+                    "clientId": str(acc.bank_id),
+                    "clientName": GroupService._get_bank_name(acc.bank_id),
+                    "accountId": acc.account_id,
+                    "accountName": acc.account_name
+                })
+        
+        return result
     
     @staticmethod
     def can_add_member(
         db: Session,
         group_id: int,
         account_type: AccountType
-    ) -> tuple[bool, Optional[str]]:
-        """
-        Проверяет, можно ли добавить нового члена
+    ) -> Tuple[bool, Optional[str]]:
+        """Проверяет можно ли добавить нового члена"""
+        current_members = db.query(GroupMember).filter(GroupMember.group_id == group_id).count()
+        max_members = ACCOUNT_LIMITS[account_type]["max_members"]
         
-        TODO (EZIRA):
-        1. Получить текущее количество членов
-        2. Проверить лимит для типа аккаунта
-        3. Вернуть (True, None) или (False, error_message)
-        """
-        # TODO: Implement
-        pass
+        if current_members >= max_members:
+            return False, f"Достигнут лимит членов группы ({max_members})"
+        
+        return True, None
     
     @staticmethod
     def is_user_member(db: Session, group_id: int, user_id: int) -> bool:
-        """
-        Проверяет, является ли пользователь членом группы
-        
-        TODO (EZIRA):
-        1. Проверить наличие записи GroupMember
-        2. Вернуть True/False
-        """
-        # TODO: Implement
-        pass
+        """Проверяет является ли пользователь членом группы"""
+        membership = (
+            db.query(GroupMember)
+            .filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+            .first()
+        )
+        return membership is not None
     
     @staticmethod
     def is_user_owner(db: Session, group_id: int, user_id: int) -> bool:
-        """
-        Проверяет, является ли пользователь владельцем группы
-        
-        TODO (EZIRA):
-        1. Получить группу
-        2. Проверить owner_id
-        3. Вернуть True/False
-        """
-        # TODO: Implement
-        pass
-
-
+        """Проверяет является ли пользователь владельцем группы"""
+        group = db.query(Group).filter(Group.id == group_id).first()
+        return group and group.owner_id == user_id
+    
+    @staticmethod
+    def _get_bank_name(bank_id: int) -> str:
+        """Получает название банка по ID"""
+        bank_names = {1: "vbank", 2: "sbank", 3: "abank"}
+        return bank_names.get(bank_id, f"bank{bank_id}")

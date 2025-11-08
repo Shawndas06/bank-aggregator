@@ -40,6 +40,14 @@ class ConsentType(str, Enum):
 
 # Лимиты для типов аккаунтов
 ACCOUNT_LIMITS = {
+    "free": {
+        "maxGroups": 1,
+        "maxMembers": 2
+    },
+    "premium": {
+        "maxGroups": 5,
+        "maxMembers": 20
+    },
     AccountType.FREE: {
         "max_groups": 1,
         "max_members": 2

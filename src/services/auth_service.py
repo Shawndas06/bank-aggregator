@@ -1,14 +1,16 @@
 """
 Сервис для аутентификации
-РАЗРАБОТЧИК: BAGA
 """
+import logging
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, Tuple
 from datetime import date
 
 from src.models.user import User
 from src.utils.security import hash_password, verify_password
 from src.utils.validators import validate_password_strength, validate_age
+
+logger = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -21,50 +23,86 @@ class AuthService:
         password: str,
         name: str,
         birth_date: date
-    ) -> tuple[Optional[User], Optional[str]]:
+    ) -> Tuple[Optional[User], Optional[str]]:
         """
-        Создает нового пользователя
+        Создаёт нового пользователя
         
-        TODO (BAGA):
-        1. Проверить, что email не занят
-        2. Валидировать пароль
-        3. Проверить возраст (18+)
-        4. Создать пользователя с хешированным паролем
-        5. Вернуть (User, None) или (None, error_message)
+        Returns:
+            (User, None) если успешно
+            (None, error_message) если ошибка
         """
-        # TODO: Implement
-        pass
+        # Проверяем что email не занят
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            return None, "Пользователь с таким email уже существует"
+        
+        # Валидируем пароль
+        is_valid, error_msg = validate_password_strength(password)
+        if not is_valid:
+            return None, error_msg
+        
+        # Проверяем возраст
+        if not validate_age(birth_date):
+            return None, "Вам должно быть минимум 18 лет"
+        
+        # Хешируем пароль
+        hashed = hash_password(password)
+        
+        # Создаём пользователя
+        new_user = User(
+            email=email,
+            password_hash=hashed,
+            name=name,
+            birth_date=birth_date,
+            is_verified=False  # Требуется подтверждение email
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        logger.info(f"Создан новый пользователь: {email}")
+        return new_user, None
     
     @staticmethod
     def verify_user(db: Session, email: str) -> Optional[User]:
-        """
-        Подтверждает email пользователя
+        """Подтверждает email пользователя"""
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            return None
         
-        TODO (BAGA):
-        1. Найти пользователя по email
-        2. Установить is_verified=True
-        3. Сохранить изменения
-        4. Вернуть пользователя
-        """
-        # TODO: Implement
-        pass
+        user.is_verified = True
+        db.commit()
+        db.refresh(user)
+        
+        logger.info(f"Email подтверждён для пользователя: {email}")
+        return user
     
     @staticmethod
     def authenticate_user(
         db: Session,
         email: str,
         password: str
-    ) -> tuple[Optional[User], Optional[str]]:
+    ) -> Tuple[Optional[User], Optional[str]]:
         """
         Аутентифицирует пользователя
         
-        TODO (BAGA):
-        1. Найти пользователя по email
-        2. Проверить пароль
-        3. Проверить is_verified
-        4. Вернуть (User, None) или (None, error_message)
+        Returns:
+            (User, None) если успешно
+            (None, error_message) если ошибка
         """
-        # TODO: Implement
-        pass
-
-
+        # Ищем пользователя
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            return None, "Неверный email или пароль"
+        
+        # Проверяем пароль
+        if not verify_password(password, user.password_hash):
+            return None, "Неверный email или пароль"
+        
+        # Проверяем что email подтверждён
+        if not user.is_verified:
+            return None, "Аккаунт не подтвержден. Пожалуйста, подтвердите email."
+        
+        logger.info(f"Пользователь авторизован: {email}")
+        return user, None

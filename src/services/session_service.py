@@ -1,12 +1,14 @@
 """
 Сервис для работы с сессиями
-РАЗРАБОТЧИК: BAGA
 """
 import secrets
-import redis
+import logging
 from typing import Optional
+import redis
 
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class SessionService:
@@ -15,16 +17,19 @@ class SessionService:
     @staticmethod
     def create_session(redis_client: redis.Redis, user_id: int) -> str:
         """
-        Создает новую сессию для пользователя
+        Создаёт новую сессию для пользователя
         
-        TODO (BAGA):
-        1. Сгенерировать уникальный session_id
-        2. Сохранить в Redis: session:{session_id} -> user_id
-        3. Установить TTL = SESSION_EXPIRE_HOURS
-        4. Вернуть session_id
+        Returns:
+            session_id для установки в cookie
         """
-        # TODO: Implement
         session_id = secrets.token_urlsafe(32)
+        session_key = f"session:{session_id}"
+        
+        # Сохраняем в Redis с TTL
+        ttl = settings.SESSION_EXPIRE_HOURS * 3600
+        redis_client.setex(session_key, ttl, str(user_id))
+        
+        logger.info(f"Создана сессия для пользователя {user_id}")
         return session_id
     
     @staticmethod
@@ -32,23 +37,27 @@ class SessionService:
         """
         Получает user_id по session_id
         
-        TODO (BAGA):
-        1. Получить user_id из Redis по ключу session:{session_id}
-        2. Вернуть user_id или None
+        Returns:
+            user_id или None если сессия не найдена/истекла
         """
-        # TODO: Implement
-        pass
+        session_key = f"session:{session_id}"
+        user_id_str = redis_client.get(session_key)
+        
+        if user_id_str:
+            return int(user_id_str)
+        return None
     
     @staticmethod
     def delete_session(redis_client: redis.Redis, session_id: str) -> bool:
         """
         Удаляет сессию
         
-        TODO (BAGA):
-        1. Удалить ключ session:{session_id} из Redis
-        2. Вернуть True если успешно
+        Returns:
+            True если успешно удалено
         """
-        # TODO: Implement
-        pass
-
-
+        session_key = f"session:{session_id}"
+        result = redis_client.delete(session_key)
+        
+        if result:
+            logger.info(f"Сессия удалена: {session_id[:10]}...")
+        return result > 0

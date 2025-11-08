@@ -1,26 +1,14 @@
 """
 Роутер для работы с группами
-РАЗРАБОТЧИКИ: EZIRA (основная логика), BAGA (приглашения)
-
-Эндпоинты:
-- POST /api/groups - Создать группу (EZIRA)
-- GET /api/groups - Получить список групп (EZIRA)
-- GET /api/groups/settings - Получить конфигурацию лимитов (EZIRA)
-- POST /api/groups/invite - Отправить приглашение (BAGA)
-- POST /api/groups/invite/accept - Принять приглашение (BAGA)
-- POST /api/groups/invite/decline - Отклонить приглашение (BAGA)
-- GET /api/groups/{id}/accounts - Получить счета группы (EZIRA)
-- GET /api/groups/{id}/accounts/{client_id} - Информация по счету (EZIRA)
-- GET /api/groups/{id}/accounts/balances - Балансы счетов группы (EZIRA)
-- GET /api/groups/{id}/accounts/transactions - Транзакции группы (EZIRA)
-- DELETE /api/groups - Удалить группу (EZIRA)
-- POST /api/groups/exit - Выйти из группы (EZIRA)
 """
+import logging
 from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.orm import Session
 from typing import Optional
+import redis
 
 from src.database import get_db
+from src.redis_client import get_redis
 from src.dependencies import get_current_verified_user
 from src.schemas.group import (
     GroupCreateRequest,
@@ -32,12 +20,18 @@ from src.schemas.group import (
     GroupExitRequest
 )
 from src.models.user import User
+from src.services.group_service import GroupService
+from src.services.invitation_service import InvitationService
+from src.services.account_service import AccountService
 from src.utils.responses import success_response, error_response
+from src.constants.constants import ACCOUNT_LIMITS
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/groups", tags=["Groups"])
 
 
-# ===== EZIRA: Управление группами =====
+# ===== Управление группами =====
 
 @router.post("")
 async def create_group(
@@ -45,21 +39,23 @@ async def create_group(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Создать новую группу
+    """Создать новую группу"""
+    group, error = GroupService.create_group(
+        db,
+        request.name,
+        current_user.id,
+        current_user.account_type
+    )
     
-    TODO (EZIRA):
-    1. Проверить лимит групп для типа аккаунта пользователя
-    2. Создать группу в БД (owner_id = current_user.id)
-    3. Автоматически добавить владельца в члены группы
-    4. Вернуть данные группы
-    """
-    # TODO: Implement
+    if error:
+        return error_response(error, 400)
+    
     return success_response({
-        "id": 1,
-        "name": request.name,
-        "owner_id": current_user.id
-    })
+        "id": group.id,
+        "name": group.name,
+        "ownerId": group.owner_id,
+        "createdAt": str(group.created_at)
+    }, 201)
 
 
 @router.get("")
@@ -67,36 +63,30 @@ async def get_groups(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить список групп пользователя
+    """Получить список групп пользователя"""
+    groups = GroupService.get_user_groups(db, current_user.id)
     
-    TODO (EZIRA):
-    1. Получить все группы, где пользователь является членом
-    2. Вернуть список групп
-    """
-    # TODO: Implement
-    return success_response([])
+    result = []
+    for group in groups:
+        result.append({
+            "id": group.id,
+            "name": group.name,
+            "ownerId": group.owner_id,
+            "createdAt": str(group.created_at)
+        })
+    
+    return success_response(result)
 
 
 @router.get("/settings")
 async def get_group_settings():
-    """
-    Получить конфигурацию лимитов для групп
+    """Получить конфигурацию лимитов для групп"""
+    settings_data = {
+        "free": ACCOUNT_LIMITS["free"],
+        "premium": ACCOUNT_LIMITS["premium"]
+    }
     
-    TODO (EZIRA):
-    1. Вернуть константы ACCOUNT_LIMITS
-    """
-    # TODO: Implement
-    return success_response({
-        "free": {
-            "max_groups": 1,
-            "max_members": 2
-        },
-        "premium": {
-            "max_groups": 5,
-            "max_members": 20
-        }
-    })
+    return success_response(settings_data)
 
 
 @router.delete("")
@@ -105,18 +95,14 @@ async def delete_group(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Удалить группу
+    """Удалить группу"""
+    success, error = GroupService.delete_group(db, request.group_id, current_user.id)
     
-    TODO (EZIRA):
-    1. Проверить, что пользователь является владельцем группы
-    2. Удалить все членства в группе
-    3. Удалить группу
-    4. Вернуть успешный ответ
-    """
-    # TODO: Implement
+    if not success:
+        return error_response(error, 400)
+    
     return success_response({
-        "message": "Group deleted successfully"
+        "message": "Группа успешно удалена"
     })
 
 
@@ -126,19 +112,18 @@ async def exit_group(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Выйти из группы
+    """Выйти из группы"""
+    success, error = GroupService.exit_group(db, request.group_id, current_user.id)
     
-    TODO (EZIRA):
-    1. Проверить, что пользователь НЕ является владельцем
-    2. Удалить членство пользователя в группе
-    3. Вернуть успешный ответ
-    """
-    # TODO: Implement
+    if not success:
+        return error_response(error, 400)
+    
     return success_response({
-        "message": "Left group successfully"
+        "message": "Вы успешно вышли из группы"
     })
 
+
+# ===== Счета группы =====
 
 @router.get("/{group_id}/accounts")
 async def get_group_accounts(
@@ -146,17 +131,14 @@ async def get_group_accounts(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить список всех счетов членов группы
+    """Получить список всех счетов членов группы"""
+    # Проверяем что пользователь является членом
+    if not GroupService.is_user_member(db, group_id, current_user.id):
+        return error_response("Вы не являетесь членом этой группы", 403)
     
-    TODO (EZIRA):
-    1. Проверить, что пользователь является членом группы
-    2. Получить всех членов группы
-    3. Получить все счета членов группы
-    4. Вернуть список с информацией о владельцах
-    """
-    # TODO: Implement
-    return success_response([])
+    accounts = GroupService.get_group_accounts(db, group_id)
+    
+    return success_response(accounts)
 
 
 @router.get("/{group_id}/accounts/{client_id}")
@@ -166,16 +148,20 @@ async def get_group_account_details(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить подробную информацию по конкретному счету в группе
+    """Получить подробную информацию по конкретному счёту в группе"""
+    # Проверяем что пользователь является членом
+    if not GroupService.is_user_member(db, group_id, current_user.id):
+        return error_response("Вы не являетесь членом этой группы", 403)
     
-    TODO (EZIRA):
-    1. Проверить, что пользователь является членом группы
-    2. Получить детальную информацию о счете
-    3. Вернуть данные счета
-    """
-    # TODO: Implement
-    return success_response({})
+    # Получаем счета группы
+    accounts = GroupService.get_group_accounts(db, group_id)
+    
+    # Ищем нужный счёт
+    for account in accounts:
+        if account["clientId"] == client_id:
+            return success_response(account)
+    
+    return error_response("Счёт не найден", 404)
 
 
 @router.get("/{group_id}/accounts/balances")
@@ -185,18 +171,44 @@ async def get_group_balances(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить балансы всех счетов в группе
+    """Получить балансы всех счетов в группе"""
+    # Проверяем что пользователь является членом
+    if not GroupService.is_user_member(db, group_id, current_user.id):
+        return error_response("Вы не являетесь членом этой группы", 403)
     
-    TODO (EZIRA):
-    1. Проверить, что пользователь является членом группы
-    2. Получить балансы всех счетов (или отфильтровать по client_id)
-    3. Проверить кеш в Redis
-    4. Если кеша нет - получить из API банков
-    5. Вернуть список балансов
-    """
-    # TODO: Implement
-    return success_response([])
+    # Получаем всех членов группы
+    members = GroupService.get_group_members(db, group_id)
+    
+    redis_client = get_redis()
+    account_service = AccountService(db, redis_client)
+    
+    balances = []
+    
+    for member in members:
+        # Получаем счета каждого члена
+        member_accounts = account_service.get_user_accounts(member.id, client_id)
+        
+        for acc in member_accounts:
+            # Получаем баланс каждого счёта
+            try:
+                balance = account_service.get_account_balance(
+                    member.id,
+                    acc["accountId"],
+                    acc["clientId"]
+                )
+                
+                balances.append({
+                    "clientId": str(acc["clientId"]),
+                    "name": acc["clientName"],
+                    "accountName": acc["accountName"],
+                    "owner": {"name": member.name},
+                    "balance": balance
+                })
+            except Exception as e:
+                logger.error(f"Ошибка получения баланса: {e}")
+                continue
+    
+    return success_response(balances)
 
 
 @router.get("/{group_id}/accounts/transactions")
@@ -206,21 +218,49 @@ async def get_group_transactions(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить транзакции всех счетов в группе
+    """Получить транзакции всех счетов в группе"""
+    # Проверяем что пользователь является членом
+    if not GroupService.is_user_member(db, group_id, current_user.id):
+        return error_response("Вы не являетесь членом этой группы", 403)
     
-    TODO (EZIRA):
-    1. Проверить, что пользователь является членом группы
-    2. Получить транзакции всех счетов (или отфильтровать по client_id)
-    3. Проверить кеш в Redis
-    4. Если кеша нет - получить из API банков
-    5. Вернуть список транзакций
-    """
-    # TODO: Implement
-    return success_response([])
+    # Получаем всех членов группы
+    members = GroupService.get_group_members(db, group_id)
+    
+    redis_client = get_redis()
+    account_service = AccountService(db, redis_client)
+    
+    all_transactions = []
+    
+    for member in members:
+        # Получаем счета каждого члена
+        member_accounts = account_service.get_user_accounts(member.id, client_id)
+        
+        for acc in member_accounts:
+            # Получаем транзакции каждого счёта
+            try:
+                transactions = account_service.get_account_transactions(
+                    member.id,
+                    acc["accountId"],
+                    acc["clientId"]
+                )
+                
+                # Добавляем информацию о владельце
+                for txn in transactions:
+                    txn["owner"] = {"name": member.name}
+                    txn["accountName"] = acc["accountName"]
+                
+                all_transactions.extend(transactions)
+            except Exception as e:
+                logger.error(f"Ошибка получения транзакций: {e}")
+                continue
+    
+    # Сортируем по дате (новые первыми)
+    all_transactions.sort(key=lambda x: x.get("date", ""), reverse=True)
+    
+    return success_response(all_transactions)
 
 
-# ===== BAGA: Приглашения =====
+# ===== Приглашения =====
 
 @router.post("/invite")
 async def invite_to_group(
@@ -228,23 +268,36 @@ async def invite_to_group(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Отправить приглашение в группу
+    """Отправить приглашение в группу"""
+    # Проверяем что пользователь является членом или владельцем
+    if not GroupService.is_user_member(db, request.group_id, current_user.id):
+        return error_response("Вы не являетесь членом этой группы", 403)
     
-    TODO (BAGA):
-    1. Проверить, что пользователь является владельцем или членом группы
-    2. Проверить лимит членов группы для типа аккаунта
-    3. Проверить, что пользователь с таким email существует
-    4. Проверить, что пользователь еще не в группе
-    5. Создать приглашение в БД (status=PENDING)
-    6. (Опционально) Отправить уведомление на email
-    7. Вернуть успешный ответ
-    """
-    # TODO: Implement
+    # Проверяем лимит членов
+    can_add, error = GroupService.can_add_member(
+        db,
+        request.group_id,
+        current_user.account_type
+    )
+    
+    if not can_add:
+        return error_response(error, 400)
+    
+    # Создаём приглашение
+    invitation, error = InvitationService.create_invitation(
+        db,
+        request.group_id,
+        current_user.id,
+        request.email
+    )
+    
+    if error:
+        return error_response(error, 400)
+    
     return success_response({
-        "message": "Invitation sent successfully",
-        "request_id": 1
-    })
+        "message": "Приглашение успешно отправлено",
+        "requestId": invitation.id
+    }, 201)
 
 
 @router.post("/invite/accept")
@@ -253,20 +306,18 @@ async def accept_invitation(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Принять приглашение в группу
+    """Принять приглашение в группу"""
+    success, error = InvitationService.accept_invitation(
+        db,
+        request.request_id,
+        current_user.email
+    )
     
-    TODO (BAGA):
-    1. Получить приглашение по request_id
-    2. Проверить, что приглашение для current_user (по email)
-    3. Проверить, что статус PENDING
-    4. Обновить статус на ACCEPTED
-    5. Добавить пользователя в члены группы
-    6. Вернуть успешный ответ
-    """
-    # TODO: Implement
+    if not success:
+        return error_response(error, 400)
+    
     return success_response({
-        "message": "Invitation accepted successfully"
+        "message": "Приглашение принято успешно"
     })
 
 
@@ -276,19 +327,16 @@ async def decline_invitation(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Отклонить приглашение в группу
+    """Отклонить приглашение в группу"""
+    success, error = InvitationService.decline_invitation(
+        db,
+        request.request_id,
+        current_user.email
+    )
     
-    TODO (BAGA):
-    1. Получить приглашение по request_id
-    2. Проверить, что приглашение для current_user (по email)
-    3. Проверить, что статус PENDING
-    4. Обновить статус на DECLINED
-    5. Вернуть успешный ответ
-    """
-    # TODO: Implement
+    if not success:
+        return error_response(error, 400)
+    
     return success_response({
-        "message": "Invitation declined"
+        "message": "Приглашение отклонено"
     })
-
-

@@ -1,146 +1,367 @@
 """
-Клиент для работы с банковскими API
-РАЗРАБОТЧИК: EZIRA
+Клиент для работы с банковскими API (Real Hackathon API)
 """
+import logging
 import httpx
-import redis
 from typing import Dict, Any, Optional, List
+import redis
+from datetime import datetime, timedelta
 
 from src.config import settings
-from src.constants.constants import BankId, BankName
+from src.constants.bank_config import get_bank_url, get_bank_name
+
+logger = logging.getLogger(__name__)
 
 
 class BankClient:
-    """Клиент для взаимодействия с банковскими API"""
+    """Клиент для взаимодействия с реальными банковскими API хакатона"""
     
     def __init__(self, redis_client: redis.Redis):
         self.redis_client = redis_client
+        self.timeout = httpx.Timeout(30.0, connect=10.0)
     
     def _get_bank_config(self, bank_id: int) -> Dict[str, str]:
-        """
-        Получает конфигурацию банка
-        
-        TODO (EZIRA):
-        1. По bank_id определить BASE_URL, CLIENT_ID, CLIENT_SECRET
-        2. Вернуть словарь с конфигурацией
-        """
-        # TODO: Implement
-        configs = {
-            BankId.VBANK: {
-                "base_url": settings.VBANK_BASE_URL,
-                "client_id": settings.VBANK_CLIENT_ID,
-                "client_secret": settings.VBANK_CLIENT_SECRET
-            },
-            BankId.SBANK: {
-                "base_url": settings.SBANK_BASE_URL,
-                "client_id": settings.SBANK_CLIENT_ID,
-                "client_secret": settings.SBANK_CLIENT_SECRET
-            },
-            BankId.ABANK: {
-                "base_url": settings.ABANK_BASE_URL,
-                "client_id": settings.ABANK_CLIENT_ID,
-                "client_secret": settings.ABANK_CLIENT_SECRET
-            }
+        """Получает конфигурацию банка"""
+        return {
+            "base_url": get_bank_url(bank_id),
+            "name": get_bank_name(bank_id),
+            "client_id": settings.TEAM_CLIENT_ID,
+            "client_secret": settings.TEAM_CLIENT_SECRET
         }
-        return configs.get(bank_id, {})
     
-    async def get_bank_token(self, user_id: int, bank_id: int) -> Optional[str]:
+    def get_bank_token(self, user_id: int, bank_id: int) -> str:
         """
-        Получает токен банка (или создает новый)
+        Получает токен банка (реальный API)
         
-        TODO (EZIRA):
-        1. Проверить наличие токена в Redis: bank_token:{user_id}:{bank_id}
-        2. Если есть - вернуть
-        3. Если нет - запросить новый токен через /auth/bank-token
-        4. Сохранить в Redis с TTL = BANK_TOKEN_TTL (23 часа)
-        5. Вернуть токен
+        Endpoint: POST /auth/bank-token?client_id=team200&client_secret=xxx
+        Токен живет 24 часа
         """
-        # TODO: Implement
-        pass
+        token_key = f"bank_token:{user_id}:{bank_id}"
+        
+        # Проверяем кеш
+        cached_token = self.redis_client.get(token_key)
+        if cached_token:
+            logger.info(f"✅ Используем кешированный токен для банка {bank_id}")
+            return cached_token
+        
+        # Получаем новый токен от банка
+        bank_config = self._get_bank_config(bank_id)
+        url = f"{bank_config['base_url']}/auth/bank-token"
+        
+        params = {
+            "client_id": bank_config["client_id"],
+            "client_secret": bank_config["client_secret"]
+        }
+        
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.post(url, params=params)
+                response.raise_for_status()
+                
+                data = response.json()
+                token = data.get("access_token")
+                
+                if not token:
+                    raise ValueError("Токен не получен от банка")
+                
+                # Сохраняем в Redis с TTL 23 часа (86400 - 1 час запас)
+                self.redis_client.setex(token_key, 82800, token)
+                
+                logger.info(f"✅ Получен новый токен для банка {bank_id} ({bank_config['name']})")
+                return token
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения токена от банка {bank_id}: {e}")
+            # В режиме разработки возвращаем mock токен
+            if settings.DEBUG:
+                mock_token = f"mock_token_{bank_config['name']}_dev"
+                logger.warning(f"⚠️  Используем mock токен для разработки")
+                return mock_token
+            raise
     
-    async def create_consent(
+    def create_consent(
         self,
         user_id: int,
         bank_id: int,
+        client_id: str,
         permissions: List[str]
-    ) -> Optional[str]:
+    ) -> str:
         """
-        Создает consent для доступа к данным
+        Создаёт consent для доступа к данным клиента
         
-        TODO (EZIRA):
-        1. Получить токен банка
-        2. Запросить создание consent через /account-consents/requests
-        3. Сохранить consent_id в Redis с TTL = CONSENT_REQUEST_TTL (4 часа)
-        4. Вернуть consent_id
+        Endpoint: POST /account-consents/request
+        Headers: X-Requesting-Bank: team200
         """
-        # TODO: Implement
-        pass
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+        
+        url = f"{bank_config['base_url']}/account-consents/request"
+        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Requesting-Bank": bank_config["client_id"],
+            "Content-Type": "application/json"
+        }
+        
+        body = {
+            "client_id": client_id,
+            "permissions": permissions,
+            "reason": "Агрегация счетов для Bank Aggregator",
+            "requesting_bank": bank_config["client_id"],
+            "requesting_bank_name": "Bank Aggregator App"
+        }
+        
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.post(url, headers=headers, json=body)
+                response.raise_for_status()
+                
+                data = response.json()
+                consent_id = data.get("consent_id")
+                
+                if not consent_id:
+                    raise ValueError("Consent ID не получен")
+                
+                # Сохраняем в Redis с TTL 4 часа
+                consent_key = f"consent:{user_id}:{bank_id}"
+                self.redis_client.setex(consent_key, settings.CONSENT_REQUEST_TTL, consent_id)
+                
+                logger.info(f"✅ Создан consent {consent_id} для банка {bank_id}")
+                return consent_id
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка создания consent: {e}")
+            # В режиме разработки возвращаем mock consent
+            if settings.DEBUG:
+                mock_consent = f"consent_{bank_id}_{user_id}_dev"
+                logger.warning(f"⚠️  Используем mock consent для разработки")
+                return mock_consent
+            raise
     
-    async def get_accounts(
+    def get_accounts(
         self,
         user_id: int,
-        bank_id: int
+        bank_id: int,
+        client_id: str
     ) -> List[Dict[str, Any]]:
         """
         Получает список счетов из банка
         
-        TODO (EZIRA):
-        1. Получить токен банка
-        2. Запросить /api/accounts
-        3. Вернуть список счетов
+        Endpoint: GET /accounts?client_id=team200-1
+        Headers: Authorization, X-Requesting-Bank, X-Consent-Id
         """
-        # TODO: Implement
-        pass
-    
-    async def get_account_details(
-        self,
-        user_id: int,
-        bank_id: int,
-        account_id: str
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Получает детальную информацию о счете
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
         
-        TODO (EZIRA):
-        1. Получить токен банка
-        2. Запросить /api/accounts/{account_id}
-        3. Вернуть данные счета
-        """
-        # TODO: Implement
-        pass
-    
-    async def get_account_balance(
-        self,
-        user_id: int,
-        bank_id: int,
-        account_id: str
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Получает баланс счета
+        # Получаем или создаём consent
+        consent_key = f"consent:{user_id}:{bank_id}"
+        consent_id = self.redis_client.get(consent_key)
         
-        TODO (EZIRA):
-        1. Получить токен банка
-        2. Запросить /api/accounts/{account_id}/balances
-        3. Вернуть баланс
-        """
-        # TODO: Implement
-        pass
+        if not consent_id:
+            consent_id = self.create_consent(
+                user_id,
+                bank_id,
+                client_id,
+                ["ReadAccountsDetail", "ReadBalances", "ReadTransactionsDetail"]
+            )
+        
+        url = f"{bank_config['base_url']}/accounts"
+        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Requesting-Bank": bank_config["client_id"],
+            "X-Consent-Id": consent_id
+        }
+        
+        params = {
+            "client_id": client_id
+        }
+        
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(url, headers=headers, params=params)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                # Парсим ответ (формат OpenBanking)
+                accounts = []
+                if "data" in data and "account" in data["data"]:
+                    for acc in data["data"]["account"]:
+                        accounts.append({
+                            "accountId": acc.get("accountId"),
+                            "accountName": acc.get("nickname", "Счёт"),
+                            "currency": acc.get("currency", "RUB"),
+                            "accountType": acc.get("accountType", "Personal")
+                        })
+                
+                logger.info(f"✅ Получено {len(accounts)} счетов из {bank_config['name']}")
+                return accounts
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения счетов: {e}")
+            # В режиме разработки возвращаем mock данные
+            if settings.DEBUG:
+                logger.warning(f"⚠️  Используем mock данные для разработки")
+                return [
+                    {
+                        "accountId": f"{bank_config['name']}_acc_001",
+                        "accountName": "Основной счёт",
+                        "currency": "RUB",
+                        "accountType": "Personal"
+                    }
+                ]
+            raise
     
-    async def get_account_transactions(
+    def get_account_balance(
         self,
         user_id: int,
         bank_id: int,
-        account_id: str
+        account_id: str,
+        client_id: str
+    ) -> Dict[str, Any]:
+        """
+        Получает баланс счёта
+        
+        Endpoint: GET /accounts/{account_id}/balances
+        """
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+        
+        # Получаем consent
+        consent_key = f"consent:{user_id}:{bank_id}"
+        consent_id = self.redis_client.get(consent_key)
+        
+        if not consent_id:
+            consent_id = self.create_consent(
+                user_id,
+                bank_id,
+                client_id,
+                ["ReadAccountsDetail", "ReadBalances"]
+            )
+        
+        url = f"{bank_config['base_url']}/accounts/{account_id}/balances"
+        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Requesting-Bank": bank_config["client_id"],
+            "X-Consent-Id": consent_id
+        }
+        
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(url, headers=headers)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                # Парсим ответ
+                if "data" in data and "balance" in data["data"]:
+                    balances = data["data"]["balance"]
+                    if balances:
+                        first_balance = balances[0]
+                        return {
+                            "amount": float(first_balance.get("amount", {}).get("amount", 0)),
+                            "currency": first_balance.get("amount", {}).get("currency", "RUB")
+                        }
+                
+                logger.info(f"✅ Получен баланс для счёта {account_id}")
+                return {"amount": 0, "currency": "RUB"}
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения баланса: {e}")
+            # Mock данные
+            if settings.DEBUG:
+                import random
+                return {
+                    "amount": round(random.uniform(1000, 50000), 2),
+                    "currency": "RUB"
+                }
+            raise
+    
+    def get_account_transactions(
+        self,
+        user_id: int,
+        bank_id: int,
+        account_id: str,
+        client_id: str,
+        limit: int = 10
     ) -> List[Dict[str, Any]]:
         """
-        Получает транзакции счета
+        Получает транзакции по счёту
         
-        TODO (EZIRA):
-        1. Получить токен банка
-        2. Запросить /api/accounts/{account_id}/transactions
-        3. Вернуть список транзакций
+        Endpoint: GET /accounts/{account_id}/transactions
         """
-        # TODO: Implement
-        pass
-
-
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+        
+        # Получаем consent
+        consent_key = f"consent:{user_id}:{bank_id}"
+        consent_id = self.redis_client.get(consent_key)
+        
+        if not consent_id:
+            consent_id = self.create_consent(
+                user_id,
+                bank_id,
+                client_id,
+                ["ReadTransactionsDetail"]
+            )
+        
+        url = f"{bank_config['base_url']}/accounts/{account_id}/transactions"
+        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Requesting-Bank": bank_config["client_id"],
+            "X-Consent-Id": consent_id
+        }
+        
+        params = {
+            "limit": limit
+        }
+        
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(url, headers=headers, params=params)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                # Парсим ответ
+                transactions = []
+                if "data" in data and "transaction" in data["data"]:
+                    for txn in data["data"]["transaction"]:
+                        amount_data = txn.get("amount", {})
+                        transactions.append({
+                            "id": txn.get("transactionId", ""),
+                            "date": txn.get("bookingDateTime", datetime.utcnow().isoformat()),
+                            "description": txn.get("transactionInformation", "Транзакция"),
+                            "amount": float(amount_data.get("amount", 0)),
+                            "currency": amount_data.get("currency", "RUB"),
+                            "type": txn.get("creditDebitIndicator", "debit").lower()
+                        })
+                
+                logger.info(f"✅ Получено {len(transactions)} транзакций для {account_id}")
+                return transactions
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения транзакций: {e}")
+            # Mock данные
+            if settings.DEBUG:
+                import random
+                transactions = []
+                for i in range(min(limit, 5)):
+                    transactions.append({
+                        "id": f"txn_{random.randint(10000, 99999)}",
+                        "date": (datetime.utcnow() - timedelta(days=i)).isoformat(),
+                        "description": random.choice([
+                            "Покупка в магазине",
+                            "Оплата ресторана",
+                            "Перевод",
+                            "Снятие наличных"
+                        ]),
+                        "amount": round(random.uniform(-500, 1000), 2),
+                        "currency": "RUB",
+                        "type": "debit" if random.random() > 0.3 else "credit"
+                    })
+                return transactions
+            raise

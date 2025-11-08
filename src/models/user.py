@@ -36,12 +36,6 @@ class User(Base):
         back_populates="inviter",
         cascade="all, delete-orphan"
     )
-    received_invitations = relationship(
-        "Invitation",
-        foreign_keys="[Invitation.invitee_email]",
-        back_populates="invitee",
-        cascade="all, delete-orphan"
-    )
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name})>"

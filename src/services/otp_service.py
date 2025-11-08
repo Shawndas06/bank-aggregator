@@ -1,56 +1,88 @@
 """
 Сервис для работы с OTP кодами
-РАЗРАБОТЧИК: BAGA
 """
-import redis
+import logging
+import random
+from sqlalchemy.orm import Session
 from typing import Optional
 
+from src.models.otp_code import OTPCode
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class OTPService:
     """Сервис для работы с OTP кодами"""
     
     @staticmethod
-    def generate_and_save_otp(redis_client: redis.Redis, email: str) -> str:
+    def generate_otp_code(db: Session, email: str) -> str:
         """
         Генерирует и сохраняет OTP код
         
-        TODO (BAGA):
-        1. Получить OTP код из settings (хардкод или генерация)
-        2. Сохранить в Redis: otp:{email} -> код
-        3. Установить TTL = OTP_EXPIRE_MINUTES * 60
-        4. Вернуть код
+        Returns:
+            Код для отправки на email
         """
-        # TODO: Implement
-        otp_code = settings.OTP_CODE
-        return otp_code
+        # Генерируем код (используем хардкод из настроек или генерируем)
+        if settings.OTP_CODE and settings.DEBUG:
+            code = settings.OTP_CODE
+        else:
+            code = str(random.randint(100000, 999999))
+        
+        # Создаём OTP
+        otp = OTPCode(
+            email=email,
+            code=code,
+            expires_at=OTPCode.create_expiry_time()
+        )
+        
+        db.add(otp)
+        db.commit()
+        
+        logger.info(f"Создан OTP код для {email}: {code}")
+        return code
     
     @staticmethod
-    def verify_otp(redis_client: redis.Redis, email: str, code: str) -> bool:
+    def verify_otp(db: Session, email: str, code: str) -> tuple[bool, Optional[str]]:
         """
         Проверяет OTP код
         
-        TODO (BAGA):
-        1. Получить сохраненный код из Redis по ключу otp:{email}
-        2. Сравнить с переданным кодом
-        3. Если совпадает - удалить из Redis
-        4. Вернуть True/False
+        Returns:
+            (True, None) если код валиден
+            (False, error_message) если код невалиден
         """
-        # TODO: Implement
-        pass
+        # Находим последний неиспользованный код
+        otp = (
+            db.query(OTPCode)
+            .filter(OTPCode.email == email, OTPCode.is_used == False)
+            .order_by(OTPCode.created_at.desc())
+            .first()
+        )
+        
+        if not otp:
+            return False, "OTP код не найден"
+        
+        # Проверяем валидность
+        if not otp.is_valid(code):
+            if otp.is_expired():
+                return False, "OTP код истёк. Запросите новый код"
+            return False, "Неверный OTP код"
+        
+        # Помечаем как использованный
+        otp.is_used = True
+        db.commit()
+        
+        logger.info(f"OTP код успешно проверен для {email}")
+        return True, None
     
     @staticmethod
-    def send_otp_email(email: str, code: str) -> bool:
+    def send_otp_email(email: str, code: str):
         """
-        Отправляет OTP код на email (опционально)
+        Отправляет OTP код на email
         
-        TODO (BAGA - опционально):
-        1. Настроить SMTP или использовать сервис (SendGrid, etc)
-        2. Отправить email с кодом
-        3. Вернуть True если успешно
+        В режиме разработки просто логируем
         """
-        # TODO: Implement (optional)
-        pass
-
-
+        logger.info(f"📧 OTP код для {email}: {code}")
+        logger.info(f"💡 В режиме разработки - используйте этот код для подтверждения")
+        
+        # TODO: Реальная отправка email (SendGrid, AWS SES и т.д.)

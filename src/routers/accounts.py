@@ -1,20 +1,14 @@
 """
 Роутер для работы с банковскими счетами
-РАЗРАБОТЧИК: EZIRA
-
-Эндпоинты:
-- POST /api/accounts/attach - Привязать счет к аккаунту
-- GET /api/accounts - Получить список всех счетов пользователя
-- POST /api/accounts - Создать счет
-- GET /api/accounts/{account_id} - Получить информацию по счету
-- GET /api/accounts/{account_id}/balances - Получить баланс по счету
-- GET /api/accounts/{account_id}/transactions - Получить транзакции по счету
 """
+import logging
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import Optional
+import redis
 
 from src.database import get_db
+from src.redis_client import get_redis
 from src.dependencies import get_current_verified_user
 from src.schemas.account import (
     AccountAttachRequest,
@@ -24,7 +18,10 @@ from src.schemas.account import (
     TransactionResponse
 )
 from src.models.user import User
+from src.services.account_service import AccountService
 from src.utils.responses import success_response, error_response
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/accounts", tags=["Accounts"])
 
@@ -35,38 +32,34 @@ async def attach_account(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Привязать счет к аккаунту пользователя
+    """Привязать счёт к аккаунту пользователя"""
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
     
-    TODO (EZIRA):
-    1. Проверить, что счет существует
-    2. Проверить, что счет не привязан к другому пользователю
-    3. Привязать счет к current_user
-    4. Вернуть успешный ответ
-    """
-    # TODO: Implement
+    success, error = service.attach_account(current_user.id, request.id)
+    
+    if not success:
+        return error_response(error, 400)
+    
     return success_response({
-        "message": "Account attached successfully",
-        "account_id": request.id
+        "message": "Счёт успешно привязан",
+        "accountId": request.id
     })
 
 
 @router.get("")
 async def get_accounts(
-    client_id: Optional[int] = Query(None),
+    client_id: Optional[int] = Query(None, description="ID банка для фильтрации"),
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить список счетов
+    """Получить список счетов пользователя"""
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
     
-    TODO (EZIRA):
-    1. Если client_id указан - фильтровать по банку
-    2. Получить все счета пользователя из БД
-    3. Вернуть список счетов
-    """
-    # TODO: Implement
-    return success_response([])
+    accounts = service.get_user_accounts(current_user.id, client_id)
+    
+    return success_response(accounts)
 
 
 @router.post("")
@@ -75,90 +68,79 @@ async def create_account(
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Создать новый счет
+    """Создать новый счёт"""
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
     
-    TODO (EZIRA):
-    1. Получить токен банка из Redis (или создать новый)
-    2. Создать consent через bank_client
-    3. Создать счет через API банка
-    4. Сохранить информацию о счете в БД
-    5. Вернуть данные счета
-    """
-    # TODO: Implement
+    account, error = service.create_account(
+        current_user.id,
+        request.client_id,
+        None  # account_name будет взято из банка
+    )
+    
+    if error:
+        return error_response(error, 400)
+    
     return success_response({
-        "message": "Account created successfully",
-        "account_id": "123"
-    })
+        "message": "Счёт успешно создан",
+        "account": {
+            "accountId": account.account_id,
+            "accountName": account.account_name,
+            "clientId": account.bank_id,
+            "isActive": account.is_active
+        }
+    }, 201)
 
 
 @router.get("/{account_id}")
 async def get_account(
-    account_id: int,
-    client_id: int = Query(...),
+    account_id: str,
+    client_id: int = Query(..., description="ID банка"),
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить информацию по счету
+    """Получить информацию по счёту"""
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
     
-    TODO (EZIRA):
-    1. Проверить, что счет принадлежит пользователю
-    2. Проверить кеш в Redis
-    3. Если кеша нет - получить данные из API банка
-    4. Сохранить в кеш с ttl 4 часа
-    5. Вернуть данные счета
-    """
-    # TODO: Implement
-    return success_response({
-        "account_id": str(account_id),
-        "client_id": client_id,
-        "client_name": "vbank",
-        "account_name": "Main Account",
-        "is_active": True
-    })
+    account_info = service.get_account_info(current_user.id, account_id, client_id)
+    
+    if not account_info:
+        return error_response("Счёт не найден", 404)
+    
+    return success_response(account_info)
 
 
 @router.get("/{account_id}/balances")
 async def get_account_balances(
-    account_id: int,
-    client_id: int = Query(...),
+    account_id: str,
+    client_id: int = Query(..., description="ID банка"),
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить баланс по счету
+    """Получить баланс по счёту"""
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
     
-    TODO (EZIRA):
-    1. Проверить, что счет принадлежит пользователю
-    2. Проверить кеш в Redis
-    3. Если кеша нет - получить баланс из API банка
-    4. Сохранить в кеш с ttl 4 часа
-    5. Вернуть баланс
-    """
-    # TODO: Implement
-    return success_response({
-        "amount": 1200.50,
-        "currency": "EUR"
-    })
+    balance = service.get_account_balance(current_user.id, account_id, client_id)
+    
+    if not balance:
+        return error_response("Не удалось получить баланс", 404)
+    
+    return success_response(balance)
 
 
 @router.get("/{account_id}/transactions")
 async def get_account_transactions(
-    account_id: int,
-    client_id: int = Query(...),
+    account_id: str,
+    client_id: int = Query(..., description="ID банка"),
     current_user: User = Depends(get_current_verified_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Получить транзакции по счету
+    """Получить транзакции по счёту"""
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
     
-    TODO (EZIRA):
-    1. Проверить, что счет принадлежит пользователю
-    2. Проверить кеш в Redis
-    3. Если кеша нет - получить транзакции из API банка
-    4. Сохранить в кеш с ttl 4 часа
-    5. Вернуть список транзакций
-    """
-    # TODO: Implement
-    return success_response([])
+    transactions = service.get_account_transactions(current_user.id, account_id, client_id)
+    
+    return success_response(transactions)

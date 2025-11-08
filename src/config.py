@@ -41,18 +41,15 @@ class Settings(BaseSettings):
     OTP_CODE: str = "123456"
     OTP_EXPIRE_MINUTES: int = 10
     
-    # Bank APIs
-    VBANK_BASE_URL: str = "https://api.vbank.com"
-    VBANK_CLIENT_ID: str = ""
-    VBANK_CLIENT_SECRET: str = ""
+    # Bank APIs (Real Hackathon APIs)
+    # Credentials от организаторов хакатона VTB API 2025
+    TEAM_CLIENT_ID: str = "team222"
+    TEAM_CLIENT_SECRET: str = "Wl1F0L2aVHOPE20rM0DFeqvP9Qr2pgQT"
     
-    ABANK_BASE_URL: str = "https://api.abank.com"
-    ABANK_CLIENT_ID: str = ""
-    ABANK_CLIENT_SECRET: str = ""
-    
-    SBANK_BASE_URL: str = "https://api.sbank.com"
-    SBANK_CLIENT_ID: str = ""
-    SBANK_CLIENT_SECRET: str = ""
+    # URLs банков из хакатона
+    VBANK_BASE_URL: str = "https://vbank.open.bankingapi.ru"
+    ABANK_BASE_URL: str = "https://abank.open.bankingapi.ru"
+    SBANK_BASE_URL: str = "https://sbank.open.bankingapi.ru"
     
     # Cache TTL (in seconds)
     BANK_TOKEN_TTL: int = 82800  # 23 hours
