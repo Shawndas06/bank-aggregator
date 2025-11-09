@@ -159,7 +159,7 @@ export function AccountList() {
     <div className="space-y-6">
       <div className="grid gap-4">
         {accounts.map((account) => (
-          <AccountCard key={account.accountId} account={account} />
+          <AccountCard key={`${account.clientId}-${account.accountId}`} account={account} />
         ))}
       </div>
 

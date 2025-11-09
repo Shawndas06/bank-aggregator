@@ -32,6 +32,10 @@ class User(Base):
         back_populates="inviter",
         cascade="all, delete-orphan"
     )
+    loyalty_cards = relationship("LoyaltyCard", back_populates="user", cascade="all, delete-orphan")
+    payments = relationship("Payment", foreign_keys="[Payment.user_id]", back_populates="user", cascade="all, delete-orphan")
+    payment_templates = relationship("PaymentTemplate", back_populates="user", cascade="all, delete-orphan")
+    savings_goals = relationship("SavingsGoal", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name})>"

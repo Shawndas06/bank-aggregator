@@ -17,11 +17,18 @@ class AuthService:
         email: str,
         password: str,
         name: str,
+        phone: str,
         birth_date: date
     ) -> Tuple[Optional[User], Optional[str]]:
         existing_user = db.query(User).filter(User.email == email).first()
         if existing_user:
             return None, "Пользователь с таким email уже существует"
+        
+        # Проверка уникальности телефона
+        if phone:
+            existing_phone = db.query(User).filter(User.phone == phone).first()
+            if existing_phone:
+                return None, "Пользователь с таким номером телефона уже существует"
 
         is_valid, error_msg = validate_password_strength(password)
         if not is_valid:
@@ -36,6 +43,7 @@ class AuthService:
             email=email,
             password_hash=hashed,
             name=name,
+            phone=phone,
             birth_date=birth_date,
             is_verified=False
         )
@@ -44,7 +52,7 @@ class AuthService:
         db.commit()
         db.refresh(new_user)
 
-        logger.info(f"Создан новый пользователь: {email}")
+        logger.info(f"Создан новый пользователь: {email}, телефон: {phone}")
         return new_user, None
 
     @staticmethod

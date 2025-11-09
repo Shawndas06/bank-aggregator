@@ -46,6 +46,10 @@ export function useGetAccounts(clientId?: number) {
       )
       return data.map(mapAccount)
     },
+    retry: 2,
+    staleTime: 1000 * 60 * 3, // 3 минуты
+    gcTime: 1000 * 60 * 10, // 10 минут в кеше
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -66,6 +70,10 @@ export function useGetBalance(accountId: string, clientId?: number) {
       return mapBalance(data)
     },
     enabled: !!accountId && !!clientId,
+    retry: 2,
+    staleTime: 1000 * 60 * 2, // 2 минуты
+    gcTime: 1000 * 60 * 5, // 5 минут в кеше
+    refetchOnWindowFocus: false,
   })
 }
 
@@ -110,6 +118,10 @@ export function useGetTransactions(accountId: string, params?: TransactionsParam
       return data.map(mapTransaction)
     },
     enabled: !!accountId && !!params?.clientId,
+    retry: 2,
+    staleTime: 1000 * 60 * 1, // 1 минута
+    gcTime: 1000 * 60 * 5, // 5 минут в кеше
+    refetchOnWindowFocus: false,
   })
 }
 

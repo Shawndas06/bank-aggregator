@@ -32,15 +32,32 @@ export function GroupsPage() {
   }
 
   const handleCreateGroup = () => {
-    if (!groupName.trim()) return
+    if (!groupName.trim()) {
+      alert('❌ Укажите название группы')
+      return
+    }
+
+    if (groupName.trim().length < 3) {
+      alert('❌ Название должно содержать минимум 3 символа')
+      return
+    }
+
+    if (groupName.trim().length > 50) {
+      alert('❌ Название не может быть длиннее 50 символов')
+      return
+    }
 
     createGroup.mutate(
-      { name: groupName },
+      { name: groupName.trim() },
       {
         onSuccess: () => {
+          alert(`✅ Группа "${groupName.trim()}" создана!`)
           setGroupName('')
           setShowCreateForm(false)
         },
+        onError: (error: any) => {
+          alert(`❌ Ошибка создания группы\n\n${error?.message || 'Попробуйте позже'}`)
+        }
       }
     )
   }

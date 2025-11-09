@@ -11,6 +11,9 @@ import { GroupDetailPage } from '@pages/group-detail'
 import { GroupTransactionsPage } from '@pages/group-transactions'
 import { ProfilePage } from '@pages/profile'
 import { PremiumPage } from '@pages/premium'
+import { AnalyticsPage } from '@pages/analytics'
+import { PaymentsPage } from '@pages/payments'
+import { LoyaltyCardsPage } from '@pages/loyalty-cards'
 import { ROUTES } from '@shared/config'
 
 export const router = createBrowserRouter([
@@ -62,6 +65,18 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.PREMIUM,
     element: <PremiumPage />,
+  },
+  {
+    path: '/analytics',
+    element: <AnalyticsPage />,
+  },
+  {
+    path: '/payments',
+    element: <PaymentsPage />,
+  },
+  {
+    path: '/loyalty-cards',
+    element: <LoyaltyCardsPage />,
   },
   {
     path: '*',

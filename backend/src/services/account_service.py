@@ -34,11 +34,14 @@ class AccountService:
         result = []
         for acc in accounts:
             result.append({
+                "id": acc.id,
                 "accountId": acc.account_id,
                 "accountName": acc.account_name,
                 "clientId": acc.bank_id,
                 "clientName": self._get_bank_name(acc.bank_id),
-                "isActive": acc.is_active
+                "isActive": acc.is_active,
+                "isHidden": acc.is_hidden,
+                "priority": acc.priority
             })
 
         return result

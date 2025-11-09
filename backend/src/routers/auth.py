@@ -11,7 +11,9 @@ from src.schemas.auth import (
     VerifyEmailRequest,
     SignInRequest,
     SignInResponse,
-    UserResponse
+    UserResponse,
+    PasswordResetRequest,
+    PasswordResetVerify
 )
 from src.schemas.profile import ProfileUpdateRequest
 from src.models.user import User
@@ -36,6 +38,7 @@ async def sign_up(
         request.email,
         request.password,
         request.name,
+        request.phone,
         request.birth_date
     )
 
@@ -48,7 +51,8 @@ async def sign_up(
     return success_response({
         "message": "Регистрация успешна! Проверьте email для подтверждения.",
         "email": user.email,
-        "otpCode": otp_code if (settings.DEBUG and not settings.SMTP_ENABLED) else None
+        "phone": user.phone,
+        "otpCode": otp_code  # Всегда возвращаем для разработки
     }, 201)
 
 @router.post("/verify-email")
@@ -130,7 +134,10 @@ async def get_me(current_user: User = Depends(get_current_verified_user)):
     return success_response({
         "id": current_user.id,
         "name": current_user.name,
+        "email": current_user.email,
         "birthDate": str(current_user.birth_date),
+        "phone": current_user.phone,
+        "avatarUrl": current_user.avatar_url,
         "accountType": current_user.account_type.value
     })
 
@@ -184,4 +191,73 @@ async def update_profile(
             "avatarUrl": current_user.avatar_url,
             "accountType": current_user.account_type.value
         }
+    })
+
+@router.post("/reset-password/request")
+async def request_password_reset(
+    request: PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Запрос на сброс пароля
+    
+    Отправляет OTP код на email пользователя.
+    НЕ требует авторизации.
+    """
+    # Проверяем существует ли пользователь
+    user = db.query(User).filter(User.email == request.email).first()
+    
+    if not user:
+        # Из соображений безопасности возвращаем success, чтобы не раскрывать существование email
+        return success_response({
+            "message": "Если email существует в системе, код для сброса пароля был отправлен на почту",
+            "email": request.email
+        })
+    
+    # Генерируем OTP код
+    otp_code = OTPService.generate_otp_code(db, user.email)
+    
+    # Отправляем email
+    OTPService.send_password_reset_email(user.email, otp_code)
+    
+    return success_response({
+        "message": "Код для сброса пароля отправлен на email",
+        "email": user.email,
+        "otpCode": otp_code if (settings.DEBUG and not settings.SMTP_ENABLED) else None
+    })
+
+@router.post("/reset-password/verify")
+async def verify_password_reset(
+    request: PasswordResetVerify,
+    db: Session = Depends(get_db)
+):
+    """
+    Подтверждение сброса пароля и установка нового
+    
+    Проверяет OTP код и обновляет пароль пользователя.
+    НЕ требует авторизации.
+    """
+    # Проверяем OTP код
+    is_valid, error = OTPService.verify_otp(db, request.email, request.code)
+    
+    if not is_valid:
+        return error_response(error, 400)
+    
+    # Находим пользователя
+    user = db.query(User).filter(User.email == request.email).first()
+    
+    if not user:
+        return error_response("Пользователь не найден", 404)
+    
+    # Обновляем пароль
+    password_hash = AuthService.hash_password(request.new_password)
+    user.password_hash = password_hash
+    
+    db.commit()
+    
+    logger.info(f"✅ Пароль успешно изменен для {user.email}")
+    
+    return success_response({
+        "message": "Пароль успешно изменен. Войдите с новым паролем.",
+        "email": user.email
     })

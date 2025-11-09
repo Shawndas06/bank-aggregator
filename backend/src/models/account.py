@@ -18,6 +18,10 @@ class BankAccount(Base):
     consent_id = Column(String(255), nullable=True)
 
     is_active = Column(Boolean, default=True, nullable=False)
+    
+    priority = Column(Integer, default=999, nullable=False)  # Приоритет для списания (1 = высший)
+    
+    is_hidden = Column(Boolean, default=False, nullable=False)  # Скрыть баланс счета
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

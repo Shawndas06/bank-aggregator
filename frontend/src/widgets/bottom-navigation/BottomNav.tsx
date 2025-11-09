@@ -1,4 +1,4 @@
-import { Home, CreditCard, Users, User } from 'lucide-react'
+import { Home, CreditCard, Users, User, ArrowRightLeft } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { cn } from '@shared/lib/utils'
 import { ROUTES } from '@shared/config'
@@ -7,6 +7,7 @@ import { useGetInvitations } from '@entities/group'
 const navItems = [
   { path: ROUTES.DASHBOARD, icon: Home, label: 'Главная' },
   { path: ROUTES.ACCOUNTS, icon: CreditCard, label: 'Счета' },
+  { path: '/payments', icon: ArrowRightLeft, label: 'Платежи' },
   { path: ROUTES.GROUPS, icon: Users, label: 'Группы' },
   { path: ROUTES.PROFILE, icon: User, label: 'Профиль' },
 ]
@@ -18,7 +19,7 @@ export function BottomNavigation() {
 
   return (
     <nav className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white shadow-lg">
-      <div className="grid grid-cols-4 gap-1 p-2">
+      <div className="grid grid-cols-5 gap-1 p-2">
         {navItems.map((item) => {
           const isActive =
             location.pathname === item.path ||

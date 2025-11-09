@@ -20,8 +20,8 @@ export function AccountDetailPage() {
 
   const [displayCount, setDisplayCount] = useState(20)
 
-  const { data: balance } = useGetBalance(id || '', clientId)
-  const { data: transactions } = useGetTransactions(id || '', { clientId })
+  const { data: balance, isLoading: balanceLoading } = useGetBalance(id || '', clientId)
+  const { data: transactions, isLoading: transactionsLoading } = useGetTransactions(id || '', { clientId })
 
   const bankName = BANK_NAMES[clientId as keyof typeof BANK_NAMES] || ''
 
@@ -74,9 +74,13 @@ export function AccountDetailPage() {
           <Card className="bg-gradient-to-br from-blue-500 to-cyan-500">
             <CardContent className="p-6">
               <p className="mb-2 text-sm font-medium text-blue-100">Баланс</p>
-              <p className="text-3xl font-bold text-white">
-                {balance ? formatCurrency(balance.amount, balance.currency) : '—'}
-              </p>
+              {balanceLoading ? (
+                <div className="h-9 w-40 animate-pulse rounded bg-white/20" />
+              ) : (
+                <p className="text-3xl font-bold text-white">
+                  {balance ? formatCurrency(balance.amount, balance.currency) : '—'}
+                </p>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -90,7 +94,26 @@ export function AccountDetailPage() {
         >
           <h3 className="text-lg font-semibold text-gray-900">Транзакции</h3>
 
-          {!transactions || transactions.length === 0 ? (
+          {transactionsLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 animate-pulse rounded-full bg-gray-200" />
+                        <div className="space-y-2">
+                          <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                          <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+                        </div>
+                      </div>
+                      <div className="h-5 w-20 animate-pulse rounded bg-gray-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : !transactions || transactions.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center">
                 <Clock className="mx-auto mb-3 h-12 w-12 text-gray-400" />

@@ -45,12 +45,20 @@ async function request<T>(url: string, options: RequestOptions = {}): Promise<T>
       body: body ? JSON.stringify(body) : undefined,
     })
 
+    // Handle HTTP errors
+    if (!response.ok && response.status === 401) {
+      // Unauthorized - redirect to login
+      window.location.href = '/sign-in'
+      throw new ApiError('Необходима авторизация', 401)
+    }
+
     // Parse response
     const data: ApiResponse<T> = await response.json()
 
     // Handle API errors
     if (!data.success) {
-      throw new ApiError(data.error.message, response.status, data.error.details)
+      const errorMessage = data.error?.message || 'Произошла ошибка'
+      throw new ApiError(errorMessage, response.status, data.error?.details)
     }
 
     return data.data
@@ -60,7 +68,12 @@ async function request<T>(url: string, options: RequestOptions = {}): Promise<T>
       throw error
     }
 
-    throw new ApiError(error instanceof Error ? error.message : 'Network error', undefined, error)
+    // Better error messages
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new ApiError('Нет подключения к серверу. Проверьте интернет-соединение.', undefined, error)
+    }
+
+    throw new ApiError(error instanceof Error ? error.message : 'Неизвестная ошибка', undefined, error)
   }
 }
 

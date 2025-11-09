@@ -7,7 +7,7 @@ from src.config import settings
 from src.database import create_tables
 from src.redis_client import redis_client
 
-from src.routers import auth, accounts, groups, analytics
+from src.routers import auth, accounts, groups, analytics, loyalty_cards, payments, premium, savings, family_budget
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -63,6 +63,11 @@ app.include_router(auth.router)
 app.include_router(accounts.router)
 app.include_router(groups.router)
 app.include_router(analytics.router)
+app.include_router(loyalty_cards.router)
+app.include_router(payments.router)
+app.include_router(premium.router)
+app.include_router(savings.router)
+app.include_router(family_budget.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():

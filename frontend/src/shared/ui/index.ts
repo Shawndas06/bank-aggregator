@@ -29,3 +29,7 @@ export { Skeleton } from './skeleton'
 export { Dialog } from './dialog'
 
 export { PremiumDialog } from './premium-dialog'
+
+export { CategoryIcon, CategoryBadge } from './category-icon'
+
+export { Progress } from './progress'

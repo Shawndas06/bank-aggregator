@@ -9,6 +9,7 @@ class SignUpRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
+    phone: str
     birth_date: date = Field(..., alias='birthDate')
 
 class VerifyEmailRequest(BaseModel):
@@ -36,3 +37,24 @@ class SignUpResponse(BaseModel):
 class SignInResponse(BaseModel):
     message: str
     user: UserResponse
+
+class PasswordResetRequest(BaseModel):
+    """Запрос на сброс пароля"""
+    email: EmailStr
+
+class PasswordResetVerify(BaseModel):
+    """Подтверждение сброса пароля"""
+    model_config = ConfigDict(populate_by_name=True)
+    
+    email: EmailStr
+    code: str = Field(..., alias='otpCode')
+    new_password: str = Field(..., alias='newPassword', min_length=8)
+
+class ProfileUpdateRequest(BaseModel):
+    """Обновление профиля пользователя"""
+    model_config = ConfigDict(populate_by_name=True)
+    
+    name: Optional[str] = None
+    birth_date: Optional[date] = Field(None, alias='birthDate')
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = Field(None, alias='avatarUrl')
