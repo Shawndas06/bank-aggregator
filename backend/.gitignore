@@ -35,6 +35,7 @@ logs/
 # Environment
 .env
 .env.local
+.env.production
 
 # Testing
 .pytest_cache/
@@ -44,3 +45,4 @@ htmlcov/
 # Docker
 .dockerignore
 
+.env
