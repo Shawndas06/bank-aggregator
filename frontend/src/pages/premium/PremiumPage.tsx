@@ -5,14 +5,34 @@ import { MobileHeader } from '@widgets/header'
 import { BottomNavigation } from '@widgets/bottom-navigation'
 import { useGetMe } from '@entities/user'
 import { Button, Card, CardContent } from '@shared/ui'
+import { apiClient } from '@shared/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useGetAccounts } from '@entities/account'
 import { Crown, Check, Zap, Users, BarChart, Headphones, ArrowLeft } from 'lucide-react'
 
 export function PremiumPage() {
   const navigate = useNavigate()
   const { data: user } = useGetMe()
+  const { data: accounts } = useGetAccounts()
+  const queryClient = useQueryClient()
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const isPremium = user?.accountType === 'premium'
+  const isPremium = user?.accountType === 'PREMIUM'
+
+  const purchaseMutation = useMutation({
+    mutationFn: (fromAccountId: number) =>
+      apiClient.post('/api/premium/purchase', { fromAccountId }),
+    onSuccess: () => {
+      alert('🎉 Поздравляем!\n\nВы стали Premium клиентом!\n\nВсе функции разблокированы!')
+      queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
+      setIsProcessing(false)
+      navigate('/profile')
+    },
+    onError: (error: any) => {
+      alert(`❌ Ошибка оплаты\n\n${error?.message || 'Недостаточно средств или попробуйте позже'}`)
+      setIsProcessing(false)
+    }
+  })
 
   const features = [
     {
@@ -46,12 +66,24 @@ export function PremiumPage() {
   ]
 
   const handlePurchase = async () => {
+    if (!accounts || accounts.length === 0) {
+      alert('❌ Подключите хотя бы один банковский счет для оплаты')
+      navigate('/accounts')
+      return
+    }
+
+    const confirm = window.confirm(
+      '💳 Оплата Premium подписки\n\n' +
+      `Сумма: 299 ₽\n` +
+      `Со счета: ${accounts[0].accountName}\n\n` +
+      'Продолжить?'
+    )
+
+    if (!confirm) return
+
     setIsProcessing(true)
-    // TODO: Implement actual payment integration
-    setTimeout(() => {
-      alert('Функция оплаты будет реализована позже')
-      setIsProcessing(false)
-    }, 1000)
+    const firstAccountId = (accounts[0] as any).id
+    purchaseMutation.mutate(firstAccountId)
   }
 
   if (isPremium) {

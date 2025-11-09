@@ -4,6 +4,7 @@ import { BottomNavigation } from '@widgets/bottom-navigation'
 import { LogoutButton } from '@features/auth/logout'
 import { useGetMe } from '@entities/user'
 import { useGetAccounts } from '@entities/account'
+import { useGetAnalyticsOverview } from '@entities/analytics'
 import { 
   User, 
   Mail, 
@@ -16,22 +17,37 @@ import {
   ChevronRight,
   Crown,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Check,
+  X,
+  FileText,
+  Gift,
+  TrendingUp,
+  Wallet,
+  Star,
+  Award
 } from 'lucide-react'
-import { Card, CardContent } from '@shared/ui'
+import { Card, CardContent, Button } from '@shared/ui'
+import { formatCurrency } from '@shared/lib/utils'
+import { useNavigate } from 'react-router-dom'
 
 export function ProfilePage() {
   const { data: user } = useGetMe()
   const { data: accounts } = useGetAccounts()
+  const { data: analytics } = useGetAnalyticsOverview()
+  const navigate = useNavigate()
 
   const accountsCount = accounts?.length || 0
   const isPremium = user?.accountType === 'PREMIUM'
+  const totalBalance = analytics?.totalBalance || 0
+  const isEmailVerified = user?.isVerified || false
+  const isPhoneVerified = !!user?.phone
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 pb-20">
       <MobileHeader />
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 py-6 space-y-4">
         {/* Заголовок */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -48,57 +64,86 @@ export function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
         >
-          <Card className="border-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
+          <Card className="border-0 bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white shadow-xl">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur">
+              <div className="flex items-start gap-4">
+                <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full border-4 border-white/30 bg-white/20 backdrop-blur-sm">
                   <User className="h-10 w-10 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold">
-                    {user?.name || 'Загрузка...'}
-                  </h3>
-                  <p className="mt-1 text-sm opacity-90">{user?.email || ''}</p>
-                  {isPremium && (
-                    <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-yellow-400/20 px-3 py-1 text-xs font-semibold text-yellow-100">
-                      <Crown className="h-3 w-3" />
-                      Premium
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold">
+                        {user?.name || 'Загрузка...'}
+                      </h3>
+                      <p className="mt-1 text-sm opacity-90">{user?.email || ''}</p>
                     </div>
-                  )}
+                    {isPremium && (
+                      <div className="rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1">
+                        <div className="flex items-center gap-1">
+                          <Crown className="h-3 w-3 text-white" />
+                          <span className="text-xs font-bold text-white">Premium</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex items-center gap-4">
+                    <button
+                      onClick={() => navigate('/premium')}
+                      className="flex items-center gap-1 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium hover:bg-white/30"
+                    >
+                      <Gift className="h-3 w-3" />
+                      {isPremium ? 'Управление подпиской' : 'Получить Premium'}
+                    </button>
+                    <button
+                      onClick={() => alert('🎁 Ваш кешбэк: 0 ₽\n\n• Делайте покупки\n• Получайте кешбэк\n• Выводите на счет')}
+                      className="flex items-center gap-1 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium hover:bg-white/30"
+                    >
+                      <Star className="h-3 w-3" />
+                      Кешбэк
+                    </button>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Stats */}
+        {/* Stats - 3 карточки как в Альфа/Тинькофф */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="grid grid-cols-2 gap-4"
+          className="grid grid-cols-3 gap-3"
         >
-          <Card className="bg-gradient-to-br from-purple-50 to-blue-50">
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100">
             <CardContent className="p-4 text-center">
-              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
-                <CreditCard className="h-6 w-6 text-purple-600" />
-              </div>
-              <p className="text-2xl font-bold text-purple-600">{accountsCount}</p>
-              <p className="text-sm font-medium text-gray-700">Счетов</p>
+              <Wallet className="mx-auto mb-2 h-6 w-6 text-purple-600" />
+              <p className="text-lg font-bold text-purple-600">
+                {formatCurrency(totalBalance, 'RUB').split(',')[0]}
+              </p>
+              <p className="text-xs font-medium text-gray-600">Баланс</p>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-green-50 to-emerald-50">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100">
             <CardContent className="p-4 text-center">
-              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                <Shield className="h-6 w-6 text-green-600" />
-              </div>
-              <p className="text-2xl font-bold text-green-600">100%</p>
-              <p className="text-sm font-medium text-gray-700">Безопасность</p>
+              <CreditCard className="mx-auto mb-2 h-6 w-6 text-blue-600" />
+              <p className="text-lg font-bold text-blue-600">{accountsCount}</p>
+              <p className="text-xs font-medium text-gray-600">Счетов</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-green-50 to-green-100">
+            <CardContent className="p-4 text-center">
+              <Shield className="mx-auto mb-2 h-6 w-6 text-green-600" />
+              <p className="text-lg font-bold text-green-600">
+                {isEmailVerified && isPhoneVerified ? '100%' : '50%'}
+              </p>
+              <p className="text-xs font-medium text-gray-600">Защита</p>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Personal Info */}
+        {/* Personal Info - как в Сбере с галочками */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -108,17 +153,74 @@ export function ProfilePage() {
           <Card>
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100">
-                <InfoRow icon={<Mail className="h-5 w-5" />} label="Email" value={user?.email || 'Не указан'} />
-                <InfoRow icon={<Phone className="h-5 w-5" />} label="Телефон" value={user?.phone || 'Не указан'} />
+                <InfoRowWithVerification 
+                  icon={<Mail className="h-5 w-5" />} 
+                  label="Email" 
+                  value={user?.email || 'Не указан'}
+                  isVerified={isEmailVerified}
+                />
+                <InfoRowWithVerification 
+                  icon={<Phone className="h-5 w-5" />} 
+                  label="Телефон" 
+                  value={user?.phone || 'Не указан'}
+                  isVerified={isPhoneVerified}
+                />
                 <InfoRow 
                   icon={<Calendar className="h-5 w-5" />} 
                   label="Дата рождения" 
                   value={user?.birthDate ? new Date(user.birthDate).toLocaleDateString('ru-RU') : 'Не указана'} 
                 />
+                <InfoRow 
+                  icon={<Award className="h-5 w-5" />} 
+                  label="Статус" 
+                  value={isPremium ? 'Premium клиент' : 'Базовый тариф'} 
+                />
               </div>
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Мои продукты - как в ВТБ */}
+        {accounts && accounts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <h3 className="mb-3 text-lg font-semibold text-gray-900">Мои продукты</h3>
+            <Card>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {accounts.slice(0, 3).map((acc: any) => (
+                    <div 
+                      key={`${acc.clientId}-${acc.accountId}`} 
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                          <CreditCard className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{acc.accountName}</p>
+                          <p className="text-xs text-gray-500">{acc.clientName}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400" />
+                    </div>
+                  ))}
+                </div>
+                {accounts.length > 3 && (
+                  <button
+                    onClick={() => navigate('/accounts')}
+                    className="mt-3 w-full rounded-lg bg-gray-50 py-2 text-sm font-medium text-purple-600 hover:bg-gray-100"
+                  >
+                    Показать все ({accounts.length})
+                  </button>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Settings */}
         <motion.div
@@ -163,6 +265,29 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode, label: string,
         <p className="text-sm text-gray-600">{label}</p>
         <p className="font-medium text-gray-900">{value}</p>
       </div>
+    </div>
+  )
+}
+
+function InfoRowWithVerification({ icon, label, value, isVerified }: { icon: React.ReactNode, label: string, value: string, isVerified: boolean }) {
+  return (
+    <div className="flex items-center gap-3 p-4">
+      <div className="text-gray-400">{icon}</div>
+      <div className="flex-1">
+        <p className="text-sm text-gray-600">{label}</p>
+        <p className="font-medium text-gray-900">{value}</p>
+      </div>
+      {isVerified ? (
+        <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1">
+          <Check className="h-3 w-3 text-green-600" />
+          <span className="text-xs font-medium text-green-600">Подтвержден</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1">
+          <X className="h-3 w-3 text-orange-600" />
+          <span className="text-xs font-medium text-orange-600">Не подтвержден</span>
+        </div>
+      )}
     </div>
   )
 }
