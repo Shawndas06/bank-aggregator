@@ -19,6 +19,7 @@ from src.schemas.group import (
 from src.schemas.profile import RoleUpdateRequest
 from src.constants.constants import GroupRole
 from src.models.user import User
+from src.models.group import GroupMember
 from src.services.group_service import GroupService
 from src.services.invitation_service import InvitationService
 from src.services.account_service import AccountService
