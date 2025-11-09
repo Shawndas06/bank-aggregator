@@ -3,6 +3,9 @@ import { z } from 'zod'
 export const signUpSchema = z
   .object({
     email: z.string().min(1, 'Email обязателен').email('Некорректный email'),
+    phone: z.string()
+      .min(1, 'Номер телефона обязателен')
+      .regex(/^\+?[0-9]{10,15}$/, 'Некорректный номер телефона (10-15 цифр)'),
     password: z
       .string()
       .min(8, 'Пароль должен быть минимум 8 символов')

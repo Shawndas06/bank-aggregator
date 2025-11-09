@@ -87,9 +87,9 @@ export function PaymentsPage() {
               onClick={() => setActivePayment('card-to-card')}
             />
             <PaymentCard
-              icon={<Users className="h-6 w-6" />}
-              label="Людям"
-              color="bg-green-100 text-green-600"
+              icon={<Smartphone className="h-6 w-6" />}
+              label="По номеру телефона"
+              color="bg-purple-100 text-purple-600"
               onClick={() => setActivePayment('to-person')}
             />
             <PaymentCard
@@ -275,7 +275,7 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
 
   const titles: Record<string, string> = {
     'card-to-card': 'Перевод с карты на карту',
-    'to-person': 'Перевод человеку',
+    'to-person': 'Перевод по номеру телефона',
     'mobile': 'Оплата мобильной связи',
     'utilities': 'Оплата ЖКХ',
     'internet': 'Оплата интернета',
@@ -313,15 +313,30 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
             </select>
           </div>
 
-          {(type === 'card-to-card' || type === 'to-person') && (
+          {type === 'card-to-card' && (
             <div>
-              <Label>{type === 'card-to-card' ? 'Номер карты получателя' : 'Телефон получателя'}</Label>
+              <Label>Номер карты получателя</Label>
               <Input
                 type="text"
-                placeholder={type === 'card-to-card' ? '1234 5678 9012 3456' : '+7 900 123-45-67'}
-                value={type === 'card-to-card' ? formData.toAccount : formData.toPhone}
-                onChange={(e) => setFormData({ ...formData, [type === 'card-to-card' ? 'toAccount' : 'toPhone']: e.target.value })}
+                placeholder="1234 5678 9012 3456"
+                value={formData.toAccount}
+                onChange={(e) => setFormData({ ...formData, toAccount: e.target.value })}
               />
+            </div>
+          )}
+
+          {type === 'to-person' && (
+            <div>
+              <Label>Номер телефона получателя</Label>
+              <Input
+                type="tel"
+                placeholder="+7 (900) 123-45-67"
+                value={formData.toPhone}
+                onChange={(e) => setFormData({ ...formData, toPhone: e.target.value })}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Деньги будут отправлены на карту, привязанную к этому номеру
+              </p>
             </div>
           )}
 

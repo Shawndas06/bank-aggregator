@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { MobileHeader } from '@widgets/header'
 import { BottomNavigation } from '@widgets/bottom-navigation'
-import { Card, CardContent, Button } from '@shared/ui'
+import { Card, CardContent, Button, Progress } from '@shared/ui'
 import { useGetAnalyticsOverview, useGetCategoriesBreakdown } from '@entities/analytics'
+import { useGetMe } from '@entities/user'
 import { formatCurrency } from '@shared/lib/utils'
 import { 
   TrendingUp, 
@@ -13,14 +14,25 @@ import {
   ArrowDownCircle,
   PieChart,
   Lightbulb,
-  Target
+  Target,
+  Crown,
+  Lock,
+  BarChart3,
+  Calendar,
+  TrendingUpIcon,
+  Activity
 } from 'lucide-react'
 import { CategoryBadge } from '@shared/ui/category-icon'
+import { useNavigate } from 'react-router-dom'
 
 export function AnalyticsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month')
   const { data: overview, isLoading } = useGetAnalyticsOverview()
   const { data: categories } = useGetCategoriesBreakdown()
+  const { data: user } = useGetMe()
+  const navigate = useNavigate()
+  
+  const isPremium = user?.accountType === 'PREMIUM'
 
   if (isLoading) {
     return (
@@ -231,12 +243,168 @@ export function AnalyticsPage() {
           </motion.div>
         )}
 
-        {/* Умные советы */}
-        {expenseChange > 50 && (
+        {/* Premium Analytics Block */}
+        {!isPremium && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
+          >
+            <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 via-white to-blue-50">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 p-3">
+                    <Crown className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="mb-2 flex items-center gap-2 text-lg font-bold text-gray-900">
+                      <Lock className="h-5 w-5 text-purple-600" />
+                      Премиум аналитика
+                    </h3>
+                    <p className="mb-4 text-sm text-gray-700">
+                      Получите доступ к профессиональным инструментам анализа:
+                    </p>
+                    <ul className="mb-4 space-y-2 text-sm text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-purple-600" />
+                        <span>Интерактивные графики расходов и доходов</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-purple-600" />
+                        <span>Прогноз бюджета на следующий месяц</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <TrendingUpIcon className="h-4 w-4 text-purple-600" />
+                        <span>Анализ трендов и сезонных паттернов</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-purple-600" />
+                        <span>Детальная разбивка по дням и часам</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-purple-600" />
+                        <span>Цели накопления с прогресс-баром</span>
+                      </li>
+                    </ul>
+                    <Button
+                      onClick={() => navigate('/premium')}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                    >
+                      <Crown className="mr-2 h-4 w-4" />
+                      Получить Premium за 299 ₽/месяц
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Premium-only: Advanced Charts */}
+        {isPremium && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <BarChart3 className="h-5 w-5 text-purple-600" />
+              Расширенная аналитика
+              <span className="ml-2 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                PREMIUM
+              </span>
+            </h3>
+            
+            {/* График расходов по дням */}
+            <Card className="mb-4">
+              <CardContent className="p-6">
+                <h4 className="mb-4 font-semibold text-gray-900">График расходов за месяц</h4>
+                <div className="h-48 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 p-4">
+                  <div className="flex h-full items-end justify-between gap-2">
+                    {[65, 85, 45, 70, 90, 55, 75, 60, 80, 70, 65, 90, 100, 75, 60, 85, 70, 55, 65, 80, 75, 60, 70, 85, 90, 75, 65, 80, 70, 60].map((height, index) => (
+                      <div
+                        key={index}
+                        className="flex-1 rounded-t-lg bg-gradient-to-t from-purple-500 to-purple-400 transition-all hover:from-purple-600 hover:to-purple-500"
+                        style={{ height: `${height}%` }}
+                        title={`День ${index + 1}: ${(height * 200).toFixed(0)} ₽`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-xs text-gray-600">
+                  <span>1</span>
+                  <span>15</span>
+                  <span>30</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Прогноз на следующий месяц */}
+            <Card className="mb-4 border-2 border-blue-200">
+              <CardContent className="p-6">
+                <h4 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  Прогноз на следующий месяц
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="text-gray-700">Ожидаемые расходы</span>
+                      <span className="font-semibold text-red-600">
+                        {formatCurrency((expenses * 1.05), 'RUB')}
+                      </span>
+                    </div>
+                    <Progress value={75} className="h-2" indicatorColor="bg-red-500" />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="text-gray-700">Ожидаемые доходы</span>
+                      <span className="font-semibold text-green-600">
+                        {formatCurrency((income * 1.02), 'RUB')}
+                      </span>
+                    </div>
+                    <Progress value={85} className="h-2" indicatorColor="bg-green-500" />
+                  </div>
+                  <div className="mt-4 rounded-lg bg-blue-50 p-3">
+                    <p className="text-sm font-medium text-blue-900">
+                      💡 Прогнозируемый остаток: {formatCurrency((income * 1.02 - expenses * 1.05), 'RUB')}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Распределение по часам */}
+            <Card>
+              <CardContent className="p-6">
+                <h4 className="mb-4 font-semibold text-gray-900">Активность по времени суток</h4>
+                <div className="space-y-2">
+                  {[
+                    { time: '🌅 Утро (6-12)', percent: 25, color: 'bg-yellow-500' },
+                    { time: '☀️ День (12-18)', percent: 45, color: 'bg-orange-500' },
+                    { time: '🌆 Вечер (18-22)', percent: 65, color: 'bg-purple-500' },
+                    { time: '🌙 Ночь (22-6)', percent: 10, color: 'bg-blue-600' },
+                  ].map((item) => (
+                    <div key={item.time}>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span>{item.time}</span>
+                        <span className="font-medium">{item.percent}%</span>
+                      </div>
+                      <Progress value={item.percent} className="h-2" indicatorColor={item.color} />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Умные советы */}
+        {expenseChange > 10 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: isPremium ? 0.6 : 0.5 }}
           >
             <Card className="bg-gradient-to-r from-purple-50 to-blue-50">
               <CardContent className="p-4 flex items-start gap-3">
@@ -258,16 +426,6 @@ export function AnalyticsPage() {
             </Card>
           </motion.div>
         )}
-
-        {/* Статистика */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">Статистика</h3>
-          {/* Placeholder для будущих графиков */}
-        </motion.div>
       </main>
 
       <BottomNavigation />

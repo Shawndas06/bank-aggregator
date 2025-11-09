@@ -57,18 +57,18 @@ export function AccountsPage() {
           <ActionButton
             icon={<Gift className="h-5 w-5" />}
             label="Лояльность"
-            color="pink"
+            color="purple"
             onClick={() => setActiveModal('loyalty-cards')}
           />
           <ActionButton
             icon={<ArrowUpDown className="h-5 w-5" />}
             label="Приоритеты"
-            color="purple"
+            color="indigo"
             onClick={() => setActiveModal('set-priority')}
           />
           <ActionButton
             icon={<Sparkles className="h-5 w-5" />}
-            color="green"
+            color="cyan"
             label="Настройки"
             onClick={() => alert('⚙️ Настройки счетов:\n\n• Переименование\n• Синхронизация\n• Скрытие балансов\n\nДоступно в меню каждого счета')}
           />
@@ -128,8 +128,8 @@ const actionButtonColors = {
 const actionButtonInlineStyles = {
   blue: { background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' },
   purple: { background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)' },
-  pink: { background: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)', boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)' },
-  green: { background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' },
+  indigo: { background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' },
+  cyan: { background: 'linear-gradient(135deg, #06B6D4 0%, #0891B2 100%)', boxShadow: '0 4px 12px rgba(6, 182, 212, 0.3)' },
   default: { background: 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)', boxShadow: '0 4px 12px rgba(107, 114, 128, 0.3)' },
 }
 

@@ -60,7 +60,7 @@ export function DashboardPage() {
             <QuickActionCard 
               icon={<QrCode className="h-6 w-6" />} 
               label="QR" 
-              onClick={() => alert('🔜 QR-платежи будут доступны в следующей версии!')} 
+              onClick={() => navigate('/qr-scanner')} 
             />
             <QuickActionCard 
               icon={<Gift className="h-6 w-6" />} 

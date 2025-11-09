@@ -14,6 +14,7 @@ import { PremiumPage } from '@pages/premium'
 import { AnalyticsPage } from '@pages/analytics'
 import { PaymentsPage } from '@pages/payments'
 import { LoyaltyCardsPage } from '@pages/loyalty-cards'
+import { QRScannerPage } from '@pages/qr-scanner'
 import { ROUTES } from '@shared/config'
 
 export const router = createBrowserRouter([
@@ -77,6 +78,10 @@ export const router = createBrowserRouter([
   {
     path: '/loyalty-cards',
     element: <LoyaltyCardsPage />,
+  },
+  {
+    path: '/qr-scanner',
+    element: <QRScannerPage />,
   },
   {
     path: '*',

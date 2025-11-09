@@ -29,6 +29,7 @@ export function SignUpForm() {
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       email: '',
+      phone: '',
       password: '',
       confirmPassword: '',
       name: '',
@@ -94,6 +95,28 @@ export function SignUpForm() {
                 />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Номер телефона *</FormLabel>
+              <FormControl>
+                <Input
+                  type="tel"
+                  placeholder="+7 900 123 45 67"
+                  autoComplete="tel"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+              <p className="text-xs text-gray-500">
+                Для переводов по номеру телефона
+              </p>
             </FormItem>
           )}
         />
