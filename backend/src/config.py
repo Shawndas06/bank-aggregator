@@ -30,6 +30,14 @@ class Settings(BaseSettings):
 
     OTP_CODE: str = "123456"
     OTP_EXPIRE_MINUTES: int = 10
+    
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@bankapp.com"
+    SMTP_FROM_NAME: str = "Bank Aggregator"
+    SMTP_ENABLED: bool = False
 
     TEAM_CLIENT_ID: str = "team222"
     TEAM_CLIENT_SECRET: str = "Wl1F0L2aVHOPE20rM0DFeqvP9Qr2pgQT"

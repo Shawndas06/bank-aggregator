@@ -48,7 +48,7 @@ async def sign_up(
     return success_response({
         "message": "Регистрация успешна! Проверьте email для подтверждения.",
         "email": user.email,
-        "otpCode": otp_code if settings.DEBUG else None
+        "otpCode": otp_code if (settings.DEBUG and not settings.SMTP_ENABLED) else None
     }, 201)
 
 @router.post("/verify-email")
