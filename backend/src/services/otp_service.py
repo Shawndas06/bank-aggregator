@@ -15,7 +15,7 @@ class OTPService:
 
     @staticmethod
     def generate_otp_code(db: Session, email: str) -> str:
-        if settings.OTP_CODE and settings.DEBUG:
+        if settings.OTP_CODE and settings.DEBUG and not settings.SMTP_ENABLED:
             code = settings.OTP_CODE
         else:
             code = str(random.randint(100000, 999999))
