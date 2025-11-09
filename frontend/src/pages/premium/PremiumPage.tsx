@@ -116,10 +116,10 @@ export function PremiumPage() {
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-blue-50 pb-20">
       <MobileHeader />
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl">
         <button
           onClick={() => navigate(-1)}
-          className="mb-4 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+          className="mb-4 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 active:scale-95 transition-transform"
         >
           <ArrowLeft className="h-4 w-4" />
           Назад
@@ -130,13 +130,13 @@ export function PremiumPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-8 text-center"
+          className="mb-6 sm:mb-8 text-center"
         >
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-blue-600">
-            <Crown className="h-8 w-8 text-white" />
+          <div className="mb-3 sm:mb-4 inline-flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-blue-600">
+            <Crown className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
           </div>
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">Станьте Premium</h1>
-          <p className="text-gray-600">Получите полный доступ ко всем возможностям сервиса</p>
+          <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-gray-900">Станьте Premium</h1>
+          <p className="text-sm sm:text-base text-gray-600 px-4">Получите полный доступ ко всем возможностям сервиса</p>
         </motion.div>
 
         {/* Pricing Card */}
@@ -144,27 +144,27 @@ export function PremiumPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
           <Card className="border-0 bg-gradient-to-br from-purple-600 to-blue-600 shadow-2xl">
-            <CardContent className="p-6 text-white">
+            <CardContent className="p-5 sm:p-6 text-white">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm opacity-90">Premium подписка</p>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-5xl font-bold">299 ₽</span>
-                    <span className="text-lg opacity-75">/ месяц</span>
+                  <p className="text-xs sm:text-sm opacity-90">Premium подписка</p>
+                  <div className="mt-1 flex items-baseline gap-1 sm:gap-2">
+                    <span className="text-3xl sm:text-5xl font-bold">299 ₽</span>
+                    <span className="text-base sm:text-lg opacity-75">/ месяц</span>
                   </div>
                 </div>
-                <Zap className="h-12 w-12 opacity-75" />
+                <Zap className="h-10 w-10 sm:h-12 sm:w-12 opacity-75" />
               </div>
-              <p className="mb-6 text-sm opacity-90">
+              <p className="mb-5 sm:mb-6 text-xs sm:text-sm opacity-90">
                 Подписка продлевается автоматически. Отменить можно в любой момент.
               </p>
               <Button
                 onClick={handlePurchase}
                 disabled={isProcessing}
-                className="w-full bg-white py-6 text-lg font-semibold text-purple-600 shadow-lg hover:bg-gray-50"
+                className="w-full bg-white py-5 sm:py-6 text-base sm:text-lg font-semibold text-purple-600 shadow-lg hover:bg-gray-50 active:scale-95 transition-all"
               >
                 {isProcessing ? 'Обработка...' : 'Оформить подписку'}
               </Button>
@@ -177,9 +177,9 @@ export function PremiumPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <h2 className="mb-4 text-xl font-bold text-gray-900">Что вы получите</h2>
+          <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">Что вы получите</h2>
           <div className="space-y-3">
             {features.map((feature, index) => {
               const Icon = feature.icon
@@ -191,24 +191,24 @@ export function PremiumPage() {
                   transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
                 >
                   <Card>
-                    <CardContent className="p-4">
-                      <div className="mb-3 flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                          <Icon className="h-5 w-5 text-blue-600" />
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="mb-2 sm:mb-3 flex items-start gap-2 sm:gap-3">
+                        <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-blue-100 flex-shrink-0">
+                          <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">{feature.title}</h3>
-                          <p className="text-sm text-gray-600">{feature.description}</p>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm sm:text-base font-semibold text-gray-900">{feature.title}</h3>
+                          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{feature.description}</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="rounded-lg bg-gray-100 p-3">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                        <div className="rounded-lg bg-gray-100 p-2 sm:p-3">
                           <p className="mb-1 text-xs font-medium text-gray-500">Free</p>
-                          <p className="text-sm font-semibold text-gray-700">{feature.free}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-gray-700 truncate">{feature.free}</p>
                         </div>
-                        <div className="rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 p-3">
+                        <div className="rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 p-2 sm:p-3">
                           <p className="mb-1 text-xs font-medium text-purple-700">Premium</p>
-                          <p className="text-sm font-semibold text-purple-900">{feature.premium}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-purple-900 truncate">{feature.premium}</p>
                         </div>
                       </div>
                     </CardContent>

@@ -184,13 +184,21 @@ class PaymentService:
         amount: float = 299.0
     ) -> Tuple[Optional[Payment], Optional[str]]:
         """Создать платеж за Premium подписку"""
+        # Пытаемся найти счет пользователя
         from_account = db.query(BankAccount).filter(
             BankAccount.id == from_account_id,
             BankAccount.user_id == user_id
         ).first()
         
         if not from_account:
-            return None, "Счет для оплаты не найден"
+            # Если не нашли - берем любой активный счет пользователя
+            from_account = db.query(BankAccount).filter(
+                BankAccount.user_id == user_id,
+                BankAccount.is_active == True
+            ).first()
+            
+            if not from_account:
+                return None, "У вас нет активных счетов для оплаты"
         
         payment = Payment(
             user_id=user_id,

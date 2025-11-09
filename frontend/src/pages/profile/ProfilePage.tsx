@@ -158,12 +158,14 @@ export function ProfilePage() {
                   label="Email" 
                   value={user?.email || 'Не указан'}
                   isVerified={isEmailVerified}
+                  onVerify={() => alert('📧 Код отправлен на ' + user?.email)}
                 />
                 <InfoRowWithVerification 
                   icon={<Phone className="h-5 w-5" />} 
                   label="Телефон" 
                   value={user?.phone || 'Не указан'}
                   isVerified={isPhoneVerified}
+                  onVerify={() => alert('📱 СМС отправлена на ' + user?.phone)}
                 />
                 <InfoRow 
                   icon={<Calendar className="h-5 w-5" />} 
@@ -269,7 +271,17 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode, label: string,
   )
 }
 
-function InfoRowWithVerification({ icon, label, value, isVerified }: { icon: React.ReactNode, label: string, value: string, isVerified: boolean }) {
+function InfoRowWithVerification({ icon, label, value, isVerified, onVerify }: { icon: React.ReactNode, label: string, value: string, isVerified: boolean, onVerify?: () => void }) {
+  const handleVerify = () => {
+    if (onVerify) {
+      onVerify()
+    } else if (label === 'Email') {
+      alert('📧 Подтверждение Email\n\nПисьмо с кодом отправлено на вашу почту.\nВведите код для подтверждения.')
+    } else if (label === 'Телефон') {
+      alert('📱 Подтверждение номера\n\nСМС с кодом отправлена на ваш номер.\nВведите код для подтверждения.')
+    }
+  }
+
   return (
     <div className="flex items-center gap-3 p-4">
       <div className="text-gray-400">{icon}</div>
@@ -283,10 +295,13 @@ function InfoRowWithVerification({ icon, label, value, isVerified }: { icon: Rea
           <span className="text-xs font-medium text-green-600">Подтвержден</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1">
+        <button
+          onClick={handleVerify}
+          className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-1 transition-all hover:bg-orange-200 active:scale-95"
+        >
           <X className="h-3 w-3 text-orange-600" />
-          <span className="text-xs font-medium text-orange-600">Не подтвержден</span>
-        </div>
+          <span className="text-xs font-medium text-orange-600">Подтвердить</span>
+        </button>
       )}
     </div>
   )

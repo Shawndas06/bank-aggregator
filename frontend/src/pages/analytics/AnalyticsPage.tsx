@@ -86,14 +86,14 @@ export function AnalyticsPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 pb-20">
       <MobileHeader />
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl">
         {/* Заголовок */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="mb-2 text-2xl font-bold text-gray-900">Аналитика</h2>
-          <p className="text-gray-600">Детальный анализ ваших финансов</p>
+          <h2 className="mb-1 sm:mb-2 text-xl sm:text-2xl font-bold text-gray-900">Аналитика</h2>
+          <p className="text-sm sm:text-base text-gray-600">Детальный анализ ваших финансов</p>
         </motion.div>
 
         {/* Выбор периода */}
@@ -102,11 +102,12 @@ export function AnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="flex justify-center gap-2 rounded-xl bg-white p-2 shadow-sm">
+          <div className="flex justify-center gap-1.5 sm:gap-2 rounded-xl bg-white p-1.5 sm:p-2 shadow-sm">
             <Button
               variant={selectedPeriod === 'week' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('week')}
+              className="flex-1 text-xs sm:text-sm py-2 sm:py-2.5"
             >
               Неделя
             </Button>
@@ -114,6 +115,7 @@ export function AnalyticsPage() {
               variant={selectedPeriod === 'month' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('month')}
+              className="flex-1 text-xs sm:text-sm py-2 sm:py-2.5"
             >
               Месяц
             </Button>
@@ -121,6 +123,7 @@ export function AnalyticsPage() {
               variant={selectedPeriod === 'year' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('year')}
+              className="flex-1 text-xs sm:text-sm py-2 sm:py-2.5"
             >
               Год
             </Button>
@@ -132,43 +135,43 @@ export function AnalyticsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-3 gap-4"
+          className="grid grid-cols-3 gap-2 sm:gap-4"
         >
           {/* Баланс */}
           <Card>
-            <CardContent className="p-4">
-              <div className="mb-2 flex items-center gap-2 text-purple-600">
-                <Wallet className="h-4 w-4" />
-                <p className="text-xs font-medium">Баланс</p>
+            <CardContent className="p-2.5 sm:p-4">
+              <div className="mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2 text-purple-600">
+                <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
+                <p className="text-[10px] sm:text-xs font-medium">Баланс</p>
               </div>
-              <p className="text-xl font-bold text-gray-900">
-                {formatCurrency(totalBalance, 'RUB')}
+              <p className="text-sm sm:text-xl font-bold text-gray-900 truncate">
+                {formatCurrency(totalBalance, 'RUB').split('.')[0]}
               </p>
             </CardContent>
           </Card>
 
           {/* Расходы */}
           <Card>
-            <CardContent className="p-4">
-              <div className="mb-2 flex items-center gap-2 text-red-600">
-                <TrendingDown className="h-4 w-4" />
-                <p className="text-xs font-medium">Расходы</p>
+            <CardContent className="p-2.5 sm:p-4">
+              <div className="mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2 text-red-600">
+                <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
+                <p className="text-[10px] sm:text-xs font-medium">Расходы</p>
               </div>
-              <p className="text-xl font-bold text-gray-900">
-                {formatCurrency(expenses, 'RUB')}
+              <p className="text-sm sm:text-xl font-bold text-gray-900 truncate">
+                {formatCurrency(expenses, 'RUB').split('.')[0]}
               </p>
             </CardContent>
           </Card>
 
           {/* Доходы */}
           <Card>
-            <CardContent className="p-4">
-              <div className="mb-2 flex items-center gap-2 text-green-600">
-                <TrendingUp className="h-4 w-4" />
-                <p className="text-xs font-medium">Доходы</p>
+            <CardContent className="p-2.5 sm:p-4">
+              <div className="mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2 text-green-600">
+                <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+                <p className="text-[10px] sm:text-xs font-medium">Доходы</p>
               </div>
-              <p className="text-xl font-bold text-gray-900">
-                {formatCurrency(income, 'RUB')}
+              <p className="text-sm sm:text-xl font-bold text-gray-900 truncate">
+                {formatCurrency(income, 'RUB').split('.')[0]}
               </p>
             </CardContent>
           </Card>
@@ -181,7 +184,7 @@ export function AnalyticsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Топ категории расходов</h3>
+            <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-gray-900">Топ категории расходов</h3>
             <div className="space-y-3">
               {topCategories.map((cat: any) => (
                 <Card key={cat.category}>
