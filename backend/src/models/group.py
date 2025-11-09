@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, UniqueConstraint, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from src.database import Base
+from src.constants.constants import GroupRole
 
 class Group(Base):
     __tablename__ = "groups"
@@ -24,6 +25,11 @@ class GroupMember(Base):
     id = Column(Integer, primary_key=True, index=True)
     group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(
+        Enum(GroupRole),
+        default=GroupRole.MEMBER,
+        nullable=False
+    )
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
     group = relationship("Group", back_populates="members")

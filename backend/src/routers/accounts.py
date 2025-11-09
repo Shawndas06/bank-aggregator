@@ -14,6 +14,7 @@ from src.schemas.account import (
     BalanceResponse,
     TransactionResponse
 )
+from src.schemas.profile import AccountRenameRequest
 from src.models.user import User
 from src.services.account_service import AccountService
 from src.utils.responses import success_response, error_response
@@ -180,3 +181,43 @@ async def get_all_transactions(
     )
 
     return success_response(transactions)
+
+@router.put("/{account_id}/rename")
+async def rename_account(
+    account_id: int,
+    request: AccountRenameRequest,
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
+    
+    success, error = service.rename_account(current_user.id, account_id, request.account_name)
+    
+    if not success:
+        return error_response(error, 404)
+    
+    return success_response({
+        "message": "Счёт успешно переименован",
+        "accountId": account_id,
+        "newName": request.account_name
+    })
+
+@router.post("/{account_id}/sync")
+async def force_sync_account(
+    account_id: int,
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    redis_client = get_redis()
+    service = AccountService(db, redis_client)
+    
+    sync_result, error = service.force_sync_account(current_user.id, account_id)
+    
+    if error:
+        return error_response(error, 400)
+    
+    return success_response({
+        "message": "Счёт успешно синхронизирован",
+        "syncData": sync_result
+    })

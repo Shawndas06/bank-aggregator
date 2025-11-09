@@ -7,7 +7,7 @@ from src.config import settings
 from src.database import create_tables
 from src.redis_client import redis_client
 
-from src.routers import auth, accounts, groups
+from src.routers import auth, accounts, groups, analytics
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,6 +62,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(auth.router)
 app.include_router(accounts.router)
 app.include_router(groups.router)
+app.include_router(analytics.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():

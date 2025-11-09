@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Dict, Any
 from src.models.group import Group, GroupMember
 from src.models.user import User
 from src.models.account import BankAccount
-from src.constants.constants import AccountType, ACCOUNT_LIMITS
+from src.constants.constants import AccountType, ACCOUNT_LIMITS, GroupRole
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class GroupService:
         db.add(group)
         db.flush()
 
-        member = GroupMember(group_id=group.id, user_id=owner_id)
+        member = GroupMember(group_id=group.id, user_id=owner_id, role=GroupRole.OWNER)
         db.add(member)
 
         db.commit()
@@ -133,7 +133,7 @@ class GroupService:
         if existing:
             return False, "Пользователь уже является членом группы"
 
-        member = GroupMember(group_id=group_id, user_id=user.id)
+        member = GroupMember(group_id=group_id, user_id=user.id, role=GroupRole.MEMBER)
         db.add(member)
         db.commit()
 
@@ -193,3 +193,52 @@ class GroupService:
     def _get_bank_name(bank_id: int) -> str:
         bank_names = {1: "vbank", 2: "sbank", 3: "abank"}
         return bank_names.get(bank_id, f"bank{bank_id}")
+    
+    @staticmethod
+    def get_member_role(db: Session, group_id: int, user_id: int) -> Optional[GroupRole]:
+        """
+        Получить роль пользователя в группе
+        """
+        membership = (
+            db.query(GroupMember)
+            .filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+            .first()
+        )
+        return membership.role if membership else None
+    
+    @staticmethod
+    def update_member_role(
+        db: Session,
+        group_id: int,
+        target_user_id: int,
+        new_role: GroupRole,
+        requester_user_id: int
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Обновить роль участника группы
+        """
+        requester_role = GroupService.get_member_role(db, group_id, requester_user_id)
+        
+        if requester_role != GroupRole.OWNER and requester_role != GroupRole.ADMIN:
+            return False, "Недостаточно прав для изменения ролей"
+        
+        if requester_role == GroupRole.ADMIN and new_role in [GroupRole.OWNER, GroupRole.ADMIN]:
+            return False, "Администратор не может назначать владельцев и администраторов"
+        
+        membership = (
+            db.query(GroupMember)
+            .filter(GroupMember.group_id == group_id, GroupMember.user_id == target_user_id)
+            .first()
+        )
+        
+        if not membership:
+            return False, "Пользователь не является членом группы"
+        
+        if membership.role == GroupRole.OWNER:
+            return False, "Нельзя изменить роль владельца"
+        
+        membership.role = new_role
+        db.commit()
+        
+        logger.info(f"Роль пользователя {target_user_id} в группе {group_id} изменена на {new_role}")
+        return True, None

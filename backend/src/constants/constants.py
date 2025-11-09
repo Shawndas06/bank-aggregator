@@ -19,6 +19,29 @@ class InvitationStatus(str, Enum):
     ACCEPTED = "accepted"
     DECLINED = "declined"
 
+class GroupRole(str, Enum):
+    OWNER = "owner"
+    ADMIN = "admin"
+    MEMBER = "member"
+    CHILD = "child"
+
+class TransactionCategory(str, Enum):
+    GROCERIES = "groceries"
+    RESTAURANTS = "restaurants"
+    TRANSPORT = "transport"
+    CLOTHING = "clothing"
+    HEALTH = "health"
+    ENTERTAINMENT = "entertainment"
+    TRAVEL = "travel"
+    SPORTS = "sports"
+    BEAUTY = "beauty"
+    UTILITIES = "utilities"
+    EDUCATION = "education"
+    CHILDREN = "children"
+    HOME = "home"
+    TRANSFERS = "transfers"
+    OTHER = "other"
+
 class ConsentType(str, Enum):
     ACCOUNTS = "accounts"
     BALANCES = "balances"

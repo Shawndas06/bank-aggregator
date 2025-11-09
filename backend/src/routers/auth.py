@@ -13,6 +13,7 @@ from src.schemas.auth import (
     SignInResponse,
     UserResponse
 )
+from src.schemas.profile import ProfileUpdateRequest
 from src.models.user import User
 from src.services.auth_service import AuthService
 from src.services.session_service import SessionService
@@ -151,3 +152,36 @@ async def logout(
     json_response.delete_cookie("session-id")
 
     return json_response
+
+@router.put("/profile")
+async def update_profile(
+    request: ProfileUpdateRequest,
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    if request.name is not None:
+        current_user.name = request.name
+    
+    if request.birth_date is not None:
+        current_user.birth_date = request.birth_date
+    
+    if request.phone is not None:
+        current_user.phone = request.phone
+    
+    if request.avatar_url is not None:
+        current_user.avatar_url = request.avatar_url
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    return success_response({
+        "message": "Профиль успешно обновлен",
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "birthDate": str(current_user.birth_date),
+            "phone": current_user.phone,
+            "avatarUrl": current_user.avatar_url,
+            "accountType": current_user.account_type.value
+        }
+    })

@@ -16,6 +16,8 @@ from src.schemas.group import (
     GroupDeleteRequest,
     GroupExitRequest
 )
+from src.schemas.profile import RoleUpdateRequest
+from src.constants.constants import GroupRole
 from src.models.user import User
 from src.services.group_service import GroupService
 from src.services.invitation_service import InvitationService
@@ -316,3 +318,58 @@ async def decline_invitation(
     return success_response({
         "message": "Приглашение отклонено"
     })
+
+@router.put("/{group_id}/members/{user_id}/role")
+async def update_member_role(
+    group_id: int,
+    user_id: int,
+    request: RoleUpdateRequest,
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        new_role = GroupRole(request.role)
+    except ValueError:
+        return error_response(f"Неверная роль. Доступны: owner, admin, member, child", 400)
+    
+    success, error = GroupService.update_member_role(
+        db,
+        group_id,
+        user_id,
+        new_role,
+        current_user.id
+    )
+    
+    if not success:
+        return error_response(error, 400)
+    
+    return success_response({
+        "message": "Роль успешно обновлена",
+        "userId": user_id,
+        "newRole": new_role.value
+    })
+
+@router.get("/{group_id}/members")
+async def get_group_members_with_roles(
+    group_id: int,
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    if not GroupService.is_user_member(db, group_id, current_user.id):
+        return error_response("Вы не являетесь членом этой группы", 403)
+    
+    memberships = db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
+    
+    result = []
+    for membership in memberships:
+        user = membership.user
+        result.append({
+            "userId": user.id,
+            "name": user.name,
+            "email": user.email,
+            "avatarUrl": user.avatar_url,
+            "role": membership.role.value,
+            "joinedAt": str(membership.joined_at)
+        })
+    
+    return success_response(result)

@@ -12,6 +12,8 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     name = Column(String(255), nullable=False)
     birth_date = Column(Date, nullable=False)
+    avatar_url = Column(String(500), nullable=True)
+    phone = Column(String(20), nullable=True)
     account_type = Column(
         Enum(AccountType),
         default=AccountType.FREE,

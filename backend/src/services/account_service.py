@@ -3,6 +3,7 @@ import json
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional, Tuple
 import redis
+from datetime import datetime
 
 from src.models.account import BankAccount
 from src.models.user import User
@@ -344,3 +345,69 @@ class AccountService:
                 "hasMore": offset + limit < total_count
             }
         }
+    
+    def rename_account(
+        self,
+        user_id: int,
+        account_id: int,
+        new_name: str
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Переименовать счет
+        """
+        account = (
+            self.db.query(BankAccount)
+            .filter(BankAccount.id == account_id, BankAccount.user_id == user_id)
+            .first()
+        )
+        
+        if not account:
+            return False, "Счёт не найден"
+        
+        account.account_name = new_name
+        self.db.commit()
+        
+        logger.info(f"Счёт {account_id} переименован в '{new_name}'")
+        return True, None
+    
+    def force_sync_account(
+        self,
+        user_id: int,
+        account_id: int
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        """
+        Принудительная синхронизация счета (очистка кеша)
+        """
+        account = (
+            self.db.query(BankAccount)
+            .filter(BankAccount.id == account_id, BankAccount.user_id == user_id)
+            .first()
+        )
+        
+        if not account:
+            return None, "Счёт не найден"
+        
+        cache_keys = [
+            f"balance:{user_id}:{account.account_id}",
+            f"transactions:{user_id}:{account.account_id}",
+            f"account_info:{user_id}:{account.account_id}"
+        ]
+        
+        for key in cache_keys:
+            self.redis_client.delete(key)
+        
+        try:
+            balance = self.get_account_balance(user_id, account.account_id, account.bank_id)
+            transactions = self.get_account_transactions(user_id, account.account_id, account.bank_id)
+            
+            logger.info(f"Счёт {account_id} синхронизирован принудительно")
+            
+            return {
+                "balance": balance,
+                "transactionsCount": len(transactions),
+                "syncedAt": datetime.now().isoformat()
+            }, None
+            
+        except Exception as e:
+            logger.error(f"Ошибка синхронизации: {e}")
+            return None, str(e)
