@@ -21,13 +21,14 @@ router = APIRouter(prefix="/api/payments", tags=["Payments"])
 
 
 @router.post("/transfer-by-phone", response_model=dict)
+@router.post("/to-person", response_model=dict)
 async def transfer_by_phone(
     request: TransferByPhoneRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Перевод деньгзарегистрированному пользователю по номеру телефона
+    Перевод денег зарегистрированному пользователю по номеру телефона
     
     Это внутренний перевод в нашей системе.
     Деньги НЕ списываются с реального счета (это sandbox).

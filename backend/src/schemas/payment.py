@@ -17,10 +17,13 @@ class TransferRequest(BaseModel):
 
 class TransferByPhoneRequest(BaseModel):
     """Перевод зарегистрированному пользователю по телефону"""
-    from_account_id: int
-    to_phone: str = Field(..., description="Номер телефона получателя (+7...)")
+    from_account_id: int = Field(..., alias='fromAccountId')
+    to_phone: str = Field(..., alias='toPhone', description="Номер телефона получателя (+7...)")
     amount: float = Field(..., gt=0)
     description: Optional[str] = None
+    
+    class Config:
+        populate_by_name = True
 
 
 class UtilityPaymentRequest(BaseModel):

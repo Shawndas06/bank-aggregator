@@ -24,7 +24,7 @@ class PurchasePremiumRequest(BaseModel):
 
 @router.post("/purchase", response_model=dict)
 async def purchase_premium(
-    request: PurchasePremiumRequest,
+    request: dict,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -41,11 +41,19 @@ async def purchase_premium(
             detail="У вас уже активна подписка Premium"
         )
     
+    # Получаем account_id из request
+    from_account_id = request.get('fromAccountId') or request.get('from_account_id')
+    if not from_account_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Не указан счет для списания"
+        )
+    
     # Создаем платеж
     payment, error = PaymentService.create_premium_payment(
         db,
         current_user.id,
-        request.from_account_id,
+        from_account_id,
         amount=299.0
     )
     

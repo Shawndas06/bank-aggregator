@@ -208,7 +208,12 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
       if (type === 'card-to-card') {
         return apiClient.post('/api/payments/card-to-card', data)
       } else if (type === 'to-person') {
-        return apiClient.post('/api/payments/to-person', data)
+        return apiClient.post('/api/payments/transfer-by-phone', {
+          from_account_id: data.fromAccountId,
+          to_phone: data.toPhone,
+          amount: parseFloat(data.amount),
+          description: data.description || 'Перевод по номеру телефона'
+        })
       } else if (type === 'mobile') {
         return apiClient.post('/api/payments/mobile', data)
       } else if (type === 'utilities') {
