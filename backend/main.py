@@ -95,20 +95,40 @@ async def health_check():
 
 @app.get("/health", tags=["Health"])
 async def health():
-    redis_status = "healthy"
+    """Health check с проверкой зависимостей"""
+    redis_status = "unhealthy"
+    db_status = "unknown"
+    
     try:
         redis_client.ping()
-    except:
-        redis_status = "unhealthy"
+        redis_status = "healthy"
+    except Exception as e:
+        print(f"⚠️ Redis health check failed: {e}")
+    
+    try:
+        from src.database import engine
+        with engine.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(text("SELECT 1"))
+        db_status = "healthy"
+    except Exception as e:
+        print(f"⚠️ Database health check failed: {e}")
+        db_status = "unhealthy"
 
     return {
         "success": True,
         "data": {
             "api": "healthy",
+            "database": db_status,
             "redis": redis_status,
             "version": settings.APP_VERSION
         }
     }
+
+@app.get("/api/health", tags=["Health"])
+async def api_health():
+    """Health check через /api/ для Nginx"""
+    return await health()
 
 if __name__ == "__main__":
     import uvicorn
