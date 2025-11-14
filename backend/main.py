@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
         redis_client.ping()
         print("✅ Redis connection successful")
     except Exception as e:
-        print(f"❌ Redis connection failed: {e}")
+        print(f"⚠️ Redis connection failed: {e} (continuing without Redis)")
 
     print("✨ Application started successfully!")
 
