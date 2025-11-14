@@ -6,12 +6,18 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
-    DATABASE_URL: str = "postgresql://postgres:password@postgres:5432/bank_aggregator"
+    DATABASE_URL: str = ""  # Должен быть установлен через переменные окружения
     DATABASE_HOST: str = "postgres"
     DATABASE_PORT: int = 5432
     DATABASE_NAME: str = "bank_aggregator"
     DATABASE_USER: str = "postgres"
     DATABASE_PASSWORD: str = "password"
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Если DATABASE_URL не установлен, строим из компонентов
+        if not self.DATABASE_URL or self.DATABASE_URL == "":
+            self.DATABASE_URL = f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
 
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379

@@ -18,8 +18,14 @@ except Exception as e:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Starting Bank Aggregator API...")
-    print(f"📊 Database: {settings.DATABASE_HOST}:{settings.DATABASE_PORT}")
+    # Логируем DATABASE_URL без пароля для безопасности
+    db_url_safe = settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else "not configured"
+    print(f"📊 Database: {db_url_safe}")
     print(f"💾 Redis: {settings.REDIS_HOST}:{settings.REDIS_PORT}")
+    
+    # Проверяем, что DATABASE_URL установлен
+    if not settings.DATABASE_URL or settings.DATABASE_URL == "":
+        print("❌ WARNING: DATABASE_URL is not set! Please configure it in environment variables.")
 
     # Database connection
     try:

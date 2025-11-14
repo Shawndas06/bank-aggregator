@@ -5,6 +5,14 @@ from sqlalchemy.exc import OperationalError
 
 from src.config import settings
 
+# Проверяем наличие DATABASE_URL
+if not settings.DATABASE_URL or settings.DATABASE_URL == "":
+    raise ValueError(
+        "DATABASE_URL is not configured! "
+        "Please set DATABASE_URL environment variable. "
+        "Example: postgresql://user:password@host:5432/dbname"
+    )
+
 engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
@@ -12,7 +20,7 @@ engine = create_engine(
     pool_size=10,
     max_overflow=20,
     connect_args={
-        "connect_timeout": 5,
+        "connect_timeout": 10,
         "options": "-c statement_timeout=5000"
     }
 )
