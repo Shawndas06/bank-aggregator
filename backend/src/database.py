@@ -32,15 +32,16 @@ def create_tables():
     try:
         # Проверяем подключение
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            from sqlalchemy import text
+            conn.execute(text("SELECT 1"))
         
         Base.metadata.create_all(bind=engine)
         print("✅ Database tables created/verified")
     except OperationalError as e:
         print(f"⚠️ Database connection error: {e}")
+        print("⚠️ Tables will be created on first database connection")
         # Не падаем, таблицы создадутся при первом подключении
-        raise
     except Exception as e:
         print(f"⚠️ Database error: {e}")
+        print("⚠️ Tables will be created on first database connection")
         # Не падаем, продолжаем работу
-        raise

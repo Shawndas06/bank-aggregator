@@ -18,7 +18,6 @@ async def lifespan(app: FastAPI):
     # Database connection
     try:
         create_tables()
-        print("✅ Database connection successful")
     except Exception as e:
         print(f"⚠️ Database connection failed: {e}")
         print("⚠️ Continuing without database (tables will be created on first connection)")
