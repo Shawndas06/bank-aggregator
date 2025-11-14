@@ -1,4 +1,6 @@
-export const API_BASE_URL = 'http://localhost:8000'
+// Используем относительный путь для production (через nginx proxy)
+// Или переменную окружения для разработки
+export const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8000')
 
 export const ROUTES = {
   HOME: '/',

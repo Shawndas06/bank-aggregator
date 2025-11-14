@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Банк Агрегатор - Презентация</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --secondary: #f093fb;
+            --accent: #4facfe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            padding: 80px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Slide 1: Hero */
+        .slide-1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 120px;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 40px;
+            background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: heroPulse 3s ease-in-out infinite;
+            text-shadow: 0 0 80px rgba(255,255,255,0.5);
+        }
+
+        @keyframes heroPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .hero-subtitle {
+            font-size: 36px;
+            font-weight: 500;
+            opacity: 0.95;
+            margin-bottom: 60px;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        .team-info {
+            font-size: 24px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(20px);
+            padding: 30px 60px;
+            border-radius: 30px;
+            border: 2px solid rgba(255,255,255,0.2);
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        .team-members {
+            font-size: 20px;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease-out 0.9s both;
+        }
+
+        /* Slide 2-10: Standard slides */
+        .slide-standard {
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+        }
+
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 60px;
+        }
+
+        .slide-title {
+            font-size: 72px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .slide-number {
+            font-size: 24px;
+            font-weight: 600;
+            background: rgba(102, 126, 234, 0.2);
+            padding: 12px 30px;
+            border-radius: 50px;
+            border: 2px solid var(--primary);
+        }
+
+        .slide-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            overflow: hidden;
+        }
+
+        .feature-box {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 40px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .feature-box:hover::before {
+            left: 100%;
+        }
+
+        .feature-box:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary);
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .feature-desc {
+            font-size: 18px;
+            line-height: 1.6;
+            opacity: 0.8;
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+            transition: all 0.4s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 30px 80px rgba(102, 126, 234, 0.6);
+        }
+
+        .stat-number {
+            font-size: 56px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        /* Comparison table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 25px;
+            text-align: left;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .comparison-table td {
+            padding: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 18px;
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Navigation */
+        .navigation {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide.active .feature-box {
+            animation: fadeInUp 0.6s ease-out both;
+        }
+
+        .slide.active .feature-box:nth-child(1) { animation-delay: 0.1s; }
+        .slide.active .feature-box:nth-child(2) { animation-delay: 0.2s; }
+        .slide.active .feature-box:nth-child(3) { animation-delay: 0.3s; }
+        .slide.active .feature-box:nth-child(4) { animation-delay: 0.4s; }
+
+        /* Full width slides */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Special layouts */
+        .split-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            height: 100%;
+        }
+
+        .screenshot-box {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 600;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screenshot-box::before {
+            content: '📱';
+            position: absolute;
+            font-size: 200px;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        /* Compact text */
+        .compact-text {
+            font-size: 16px;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        .highlight-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--warning) 0%, #fbbf24 100%);
+            color: #000;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Slide 1: Hero -->
+    <div class="slide slide-1 active">
+        <div class="hero-title">🏦 Банк Агрегатор</div>
+        <div class="hero-subtitle">Все ваши счета в одном месте</div>
+        <div class="team-info">Команда: код.ing</div>
+        <div class="team-members">
+            <div>Хашагульгов Багаудин — тим лид</div>
+            <div>Озиева Эзира — backend разработчик</div>
+        </div>
+        <div style="margin-top: 80px; font-size: 28px; opacity: 0.8;">VTB API Hackathon 2025</div>
+    </div>
+
+    <!-- Slide 2: Problem -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">❌ Проблема</div>
+            <div class="slide-number">2 / 10</div>
+        </div>
+        <div class="slide-content">
+            <div class="feature-box full-width">
+                <div class="feature-title" style="font-size: 36px; margin-bottom: 30px;">У вас 3-5 банковских счетов</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">📱</div>
+                        <div class="stat-label">Каждый банк — отдельное приложение</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">⏱️</div>
+                        <div class="stat-label">Тратите 5-10 минут на проверку баланса</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">📊</div>
+                        <div class="stat-label">Нет общей картины финансов</div>
+                    </div>
+                </div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">👨‍👩‍👧‍👦</span>
+                <div class="feature-title">Сложный семейный бюджет</div>
+                <div class="feature-desc">Почти невозможно вести совместный бюджет, когда у каждого члена семьи счета в разных банках</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">💸</span>
+                <div class="feature-title">Потеря времени</div>
+                <div class="feature-desc">Постоянное переключение между приложениями отнимает время и внимание</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Solution -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">✅ Решение</div>
+            <div class="slide-number">3 / 10</div>
+        </div>
+        <div class="slide-content">
+            <div class="feature-box full-width" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%); border: 2px solid var(--primary);">
+                <div style="font-size: 48px; margin-bottom: 20px;">🏦 Банк Агрегатор</div>
+                <div style="font-size: 32px; font-weight: 700; margin-bottom: 30px; color: var(--primary);">Единая платформа для всех ваших счетов</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">💰</div>
+                        <div class="stat-label">Единый баланс</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">📊</div>
+                        <div class="stat-label">Умная аналитика</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">💸</div>
+                        <div class="stat-label">Быстрые переводы</div>
+                    </div>
+                </div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">👥</span>
+                <div class="feature-title">Семейный бюджет</div>
+                <div class="feature-desc">Создавайте группы, делитесь счетами, видите общую картину</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">🔒</span>
+                <div class="feature-title">Безопасно</div>
+                <div class="feature-desc">Через официальные VTB Open Banking API с OAuth 2.0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: Dashboard -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">📱 Главный экран</div>
+            <div class="slide-number">4 / 10</div>
+        </div>
+        <div class="slide-content">
+            <div class="screenshot-box full-width">
+                <div style="position: relative; z-index: 1;">📸 Скриншот: Dashboard с общим балансом 218 452₽</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">💰</span>
+                <div class="feature-title">Общий баланс</div>
+                <div class="feature-desc compact-text">Видите все деньги со всех банков. Скрытие/показ одним кликом</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">⚡</span>
+                <div class="feature-title">Быстрые действия</div>
+                <div class="feature-desc compact-text">Аналитика, QR, Платежи — всё в один клик</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">📋</span>
+                <div class="feature-title">Транзакции</div>
+                <div class="feature-desc compact-text">Все операции из всех банков в хронологическом порядке</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">📊</span>
+                <div class="feature-title">Топ категорий</div>
+                <div class="feature-desc compact-text">Рестораны 38%, Продукты 33%, Прочее 17%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Analytics & Payments -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">📊 Аналитика & 💸 Платежи</div>
+            <div class="slide-number">5 / 10</div>
+        </div>
+        <div class="split-layout">
+            <div>
+                <div class="screenshot-box" style="margin-bottom: 30px;">📸 Аналитика</div>
+                <div class="feature-box">
+                    <span class="feature-icon">📈</span>
+                    <div class="feature-title">Баланс • Доходы • Расходы</div>
+                    <div class="feature-desc compact-text">Топ категорий, выбор периода (неделя/месяц/год)</div>
+                </div>
+                <div class="feature-box">
+                    <span class="feature-icon">⭐</span>
+                    <div class="feature-title">Premium: Графики, прогнозы</div>
+                    <div class="feature-desc compact-text">Интерактивные графики, прогноз бюджета, анализ по времени</div>
+                </div>
+            </div>
+            <div>
+                <div class="screenshot-box" style="margin-bottom: 30px;">📸 Платежи</div>
+                <div class="feature-box">
+                    <span class="feature-icon">💳</span>
+                    <div class="feature-title">Карта-карта</div>
+                    <div class="feature-desc compact-text">Быстрые переводы между картами</div>
+                </div>
+                <div class="feature-box">
+                    <span class="feature-icon">📱</span>
+                    <div class="feature-title">По телефону • QR</div>
+                    <div class="feature-desc compact-text">Переводы по номеру, QR-коды, оплата услуг</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Family Budget -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">👨‍👩‍👧‍👦 Семейный бюджет <span class="highlight-badge">УНИКАЛЬНО!</span></div>
+            <div class="slide-number">6 / 10</div>
+        </div>
+        <div class="slide-content">
+            <div class="screenshot-box full-width" style="margin-bottom: 30px;">
+                <div style="position: relative; z-index: 1;">📸 Группы: Famili с совместным доступом</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">👥</span>
+                <div class="feature-title">Группы</div>
+                <div class="feature-desc compact-text">Создавайте для семьи или друзей. Бесплатно: 1 группа, 2 участника</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">🔐</span>
+                <div class="feature-title">Совместный доступ</div>
+                <div class="feature-desc compact-text">Общий доступ к счетам и транзакциям. Все видят баланс и операции</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">📊</span>
+                <div class="feature-title">Совместная аналитика</div>
+                <div class="feature-desc compact-text">Видите общую картину группы. Куда тратят деньги все участники</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">⭐</span>
+                <div class="feature-title">Premium: 5 групп, 20 участников</div>
+                <div class="feature-desc compact-text">Идеально для большой семьи или нескольких компаний друзей</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 7: Tech Stack -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">🔧 Технологии</div>
+            <div class="slide-number">7 / 10</div>
+        </div>
+        <div class="slide-content">
+            <div class="feature-box">
+                <span class="feature-icon">🖥️</span>
+                <div class="feature-title">Frontend</div>
+                <div class="feature-desc">
+                    <div style="margin-bottom: 15px;"><strong>React • TypeScript</strong></div>
+                    <div>Tailwind CSS • Framer Motion</div>
+                    <div style="margin-top: 20px; opacity: 0.8;">✅ Мобильная адаптация<br>✅ Современный UI/UX<br>✅ Быстрая загрузка</div>
+                </div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">⚙️</span>
+                <div class="feature-title">Backend</div>
+                <div class="feature-desc">
+                    <div style="margin-bottom: 15px;"><strong>FastAPI • PostgreSQL</strong></div>
+                    <div>Redis • Python</div>
+                    <div style="margin-top: 20px; opacity: 0.8;">✅ Высокая производительность<br>✅ Кэширование<br>✅ Масштабируемость</div>
+                </div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">🔗</span>
+                <div class="feature-title">API интеграция</div>
+                <div class="stats-grid" style="margin-top: 20px; grid-template-columns: repeat(3, 1fr);">
+                    <div style="background: rgba(102, 126, 234, 0.3); padding: 20px; border-radius: 15px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: 900;">3</div>
+                        <div style="font-size: 14px; opacity: 0.8;">Банка</div>
+                    </div>
+                    <div style="background: rgba(102, 126, 234, 0.3); padding: 20px; border-radius: 15px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: 900;">VTB</div>
+                        <div style="font-size: 14px; opacity: 0.8;">API</div>
+                    </div>
+                    <div style="background: rgba(102, 126, 234, 0.3); padding: 20px; border-radius: 15px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: 900;">OAuth</div>
+                        <div style="font-size: 14px; opacity: 0.8;">2.0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">🏦</span>
+                <div class="feature-title">Банки</div>
+                <div class="feature-desc">
+                    <div style="margin-top: 15px;">✅ VBank</div>
+                    <div>✅ SBank (Сбербанк)</div>
+                    <div>✅ ABank</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 8: Business Model -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">💼 Бизнес-модель</div>
+            <div class="slide-number">8 / 10</div>
+        </div>
+        <div class="split-layout">
+            <div>
+                <div class="feature-box" style="background: rgba(102, 126, 234, 0.2);">
+                    <span class="feature-icon">🆓</span>
+                    <div class="feature-title">Freemium</div>
+                    <div class="feature-desc">
+                        <div style="margin-top: 20px;">✅ Общий баланс<br>✅ Базовая аналитика<br>✅ Переводы<br>✅ 1 группа, 2 участника</div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="feature-box" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(251, 191, 36, 0.3) 100%); border: 2px solid var(--warning);">
+                    <span class="feature-icon">⭐</span>
+                    <div class="feature-title">Premium</div>
+                    <div style="font-size: 48px; font-weight: 900; color: var(--warning); margin: 20px 0;">299₽/мес</div>
+                    <div class="feature-desc">
+                        ✅ Расширенная аналитика<br>✅ 5 групп, 20 участников<br>✅ Графики и прогнозы<br>✅ Приоритетная поддержка
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stats-grid" style="margin-top: 40px;">
+            <div class="feature-box">
+                <div class="feature-title">🏦 Партнерства</div>
+                <div class="feature-desc compact-text">Интеграция банков, кешбэк</div>
+            </div>
+            <div class="feature-box">
+                <div class="feature-title">📊 Аналитика</div>
+                <div class="feature-desc compact-text">Для банков</div>
+            </div>
+            <div class="feature-box">
+                <div class="feature-title">💳 Продукты</div>
+                <div class="feature-desc compact-text">Рекомендации кредитов</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 9: Advantages -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">🏆 Преимущества</div>
+            <div class="slide-number">9 / 10</div>
+        </div>
+        <div class="slide-content">
+            <div class="feature-box full-width" style="margin-bottom: 30px;">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Функция</th>
+                            <th>Банк Агрегатор</th>
+                            <th>Другие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Единый интерфейс</strong></td>
+                            <td>✅ Все банки в одном месте</td>
+                            <td>❌ Разные приложения</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Семейный бюджет</strong></td>
+                            <td>✅ Группы, совместный доступ</td>
+                            <td>❌ Отсутствует</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Open Banking</strong></td>
+                            <td>✅ Официальные VTB API</td>
+                            <td>⚠️ Разные подходы</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Мобильная версия</strong></td>
+                            <td>✅ Идеально адаптирована</td>
+                            <td>⚠️ Не всегда</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="stat-card" style="grid-column: span 2;">
+                <div style="font-size: 72px; font-weight: 900; margin-bottom: 20px;">#1</div>
+                <div style="font-size: 32px; font-weight: 700;">Решение с семейным бюджетом в России!</div>
+                <div style="font-size: 20px; margin-top: 20px; opacity: 0.9;">Экономит время • Упрощает финансы • Безопасно • Уникальные функции</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 10: Next Steps -->
+    <div class="slide slide-standard">
+        <div class="slide-header">
+            <div class="slide-title">🚀 Следующие шаги</div>
+            <div class="slide-number">10 / 10</div>
+        </div>
+        <div class="slide-content">
+            <div class="feature-box">
+                <span class="feature-icon">🧪</span>
+                <div class="feature-title">Бета-тестирование</div>
+                <div class="feature-desc compact-text">Запуск для первых пользователей</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">🤖</span>
+                <div class="feature-title">AI-ассистент</div>
+                <div class="feature-desc compact-text">Умные советы по финансам</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">🏦</span>
+                <div class="feature-title">Больше банков</div>
+                <div class="feature-desc compact-text">Расширение через Open Banking</div>
+            </div>
+            <div class="feature-box">
+                <span class="feature-icon">💹</span>
+                <div class="feature-title">Инвестиции</div>
+                <div class="feature-desc compact-text">Интеграция с брокерами</div>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 60px;">
+            <div style="font-size: 96px; font-weight: 900; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 30px;">❓</div>
+            <div style="font-size: 36px; font-weight: 700;">Вопросы?</div>
+            <div style="font-size: 24px; margin-top: 40px; opacity: 0.8;">Спасибо за внимание! 🙏</div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="navigation">
+        <button class="nav-btn" onclick="previousSlide()">← Назад</button>
+        <button class="nav-btn" onclick="nextSlide()">Вперед →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            if (n >= totalSlides) currentSlide = 0;
+            if (n < 0) currentSlide = totalSlides - 1;
+            
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active');
+                if (index === currentSlide) {
+                    setTimeout(() => slide.classList.add('active'), 50);
+                }
+            });
+        }
+
+        function nextSlide() {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+
+        function previousSlide() {
+            currentSlide--;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                nextSlide();
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                previousSlide();
+            }
+        });
+
+        // Touch swipe
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        document.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX - 50) nextSlide();
+            if (touchEndX > touchStartX + 50) previousSlide();
+        });
+    </script>
+</body>
+</html>
