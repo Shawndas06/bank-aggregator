@@ -14,10 +14,21 @@ class Settings(BaseSettings):
     DATABASE_PASSWORD: str = "password"
     
     def __init__(self, **kwargs):
+        import os
         super().__init__(**kwargs)
-        # Если DATABASE_URL не установлен, строим из компонентов
-        if not self.DATABASE_URL or self.DATABASE_URL == "":
-            self.DATABASE_URL = f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
+        # Проверяем, установлена ли переменная окружения DATABASE_URL
+        env_db_url = os.getenv("DATABASE_URL", "")
+        if env_db_url:
+            self.DATABASE_URL = env_db_url
+            print(f"✅ DATABASE_URL loaded from environment variable")
+        # Если DATABASE_URL не установлен и мы не в Docker Compose (где postgres доступен), НЕ строим из компонентов
+        elif not self.DATABASE_URL or self.DATABASE_URL == "":
+            # Только для локальной разработки с Docker Compose строим из компонентов
+            # В продакшене (Render.com) это не должно работать
+            print(f"⚠️ WARNING: DATABASE_URL not set in environment variables!")
+            print(f"⚠️ Current DATABASE_URL: {self.DATABASE_URL}")
+            print(f"⚠️ Environment DATABASE_URL: {env_db_url}")
+            # НЕ строим автоматически, пусть будет пустым
 
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
