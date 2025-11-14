@@ -1,13 +1,19 @@
+import sys
+import traceback
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
-from src.config import settings
-from src.database import create_tables
-from src.redis_client import redis_client
-
-from src.routers import auth, accounts, groups, analytics, loyalty_cards, payments, premium, savings, family_budget, verification
+try:
+    from src.config import settings
+    from src.database import create_tables
+    from src.redis_client import redis_client
+    from src.routers import auth, accounts, groups, analytics, loyalty_cards, payments, premium, savings, family_budget, verification
+except Exception as e:
+    print(f"❌ Error importing modules: {e}")
+    print(traceback.format_exc())
+    sys.exit(1)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
