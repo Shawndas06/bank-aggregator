@@ -38,10 +38,10 @@ export function ProfilePage() {
   const navigate = useNavigate()
 
   const accountsCount = accounts?.length || 0
-  const isPremium = user?.accountType === 'PREMIUM'
+  const isPremium = user?.accountType === 'premium'
   const totalBalance = analytics?.totalBalance || 0
-  const isEmailVerified = user?.isVerified || false
-  const isPhoneVerified = !!user?.phone
+  const isEmailVerified = false // TODO: Add email verification to API
+  const isPhoneVerified = false // TODO: Add phone verification to API
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 pb-20">
@@ -76,7 +76,7 @@ export function ProfilePage() {
                       <h3 className="text-xl font-bold">
                         {user?.name || 'Загрузка...'}
                       </h3>
-                      <p className="mt-1 text-sm opacity-90">{user?.email || ''}</p>
+                      <p className="mt-1 text-sm opacity-90">{user?.name || ''}</p>
                     </div>
                     {isPremium && (
                       <div className="rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1">
@@ -156,16 +156,16 @@ export function ProfilePage() {
                 <InfoRowWithVerification 
                   icon={<Mail className="h-5 w-5" />} 
                   label="Email" 
-                  value={user?.email || 'Не указан'}
+                  value="Не указан"
                   isVerified={isEmailVerified}
-                  onVerify={() => alert('📧 Код отправлен на ' + user?.email)}
+                  onVerify={() => alert('📧 Код отправлен')}
                 />
                 <InfoRowWithVerification 
                   icon={<Phone className="h-5 w-5" />} 
                   label="Телефон" 
-                  value={user?.phone || 'Не указан'}
+                  value="Не указан"
                   isVerified={isPhoneVerified}
-                  onVerify={() => alert('📱 СМС отправлена на ' + user?.phone)}
+                  onVerify={() => alert('📱 СМС отправлена')}
                 />
                 <InfoRow 
                   icon={<Calendar className="h-5 w-5" />} 

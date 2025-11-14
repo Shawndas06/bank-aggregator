@@ -56,6 +56,7 @@ export function GroupTransactionsPage() {
     .flatMap((query, index) =>
       (query.data || []).map((transaction: Transaction) => ({
         ...transaction,
+        accountId: accounts![index].accountId,
         account: accounts![index],
       }))
     )

@@ -17,7 +17,7 @@ export function PremiumPage() {
   const queryClient = useQueryClient()
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const isPremium = user?.accountType === 'PREMIUM'
+  const isPremium = user?.accountType === 'premium'
 
   const purchaseMutation = useMutation({
     mutationFn: (fromAccountId: number) =>

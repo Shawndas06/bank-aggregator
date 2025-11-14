@@ -74,7 +74,7 @@ export function LoyaltyCardsPage() {
     })
   }
 
-  const loyaltyCards = cardsData?.cards || []
+  const loyaltyCards = Array.isArray(cardsData) ? cardsData : (cardsData as any)?.data || []
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

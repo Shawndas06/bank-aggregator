@@ -92,7 +92,7 @@ export function AccountsPage() {
           onClose={() => setActiveModal(null)}
           onSuccess={() => {
             setActiveModal(null)
-            queryClient.invalidateQueries(['accounts'])
+            queryClient.invalidateQueries({ queryKey: ['accounts'] })
           }}
         />
       )}
@@ -109,7 +109,7 @@ export function AccountsPage() {
           onClose={() => setActiveModal(null)}
           onSuccess={() => {
             setActiveModal(null)
-            queryClient.invalidateQueries(['accounts'])
+            queryClient.invalidateQueries({ queryKey: ['accounts'] })
           }}
         />
       )}
@@ -288,7 +288,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
     mutationFn: (data: any) => apiClient.post('/api/loyalty-cards', data),
     onSuccess: () => {
       alert('✅ Карта добавлена!')
-      queryClient.invalidateQueries(['loyalty-cards'])
+      queryClient.invalidateQueries({ queryKey: ['loyalty-cards'] })
       setShowAddForm(false)
       setFormData({ cardType: 'MAGNIT', cardNumber: '', cardName: '' })
     },
@@ -301,7 +301,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
     mutationFn: (cardId: number) => apiClient.delete(`/api/loyalty-cards/${cardId}`),
     onSuccess: () => {
       alert('✅ Карта удалена!')
-      queryClient.invalidateQueries(['loyalty-cards'])
+      queryClient.invalidateQueries({ queryKey: ['loyalty-cards'] })
     }
   })
 
@@ -321,7 +321,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
     })
   }
 
-  const loyaltyCards = cardsData?.cards || []
+  const loyaltyCards = Array.isArray(cardsData) ? cardsData : (cardsData as any)?.data || []
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">

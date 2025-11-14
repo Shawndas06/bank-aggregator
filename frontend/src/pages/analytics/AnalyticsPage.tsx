@@ -32,7 +32,7 @@ export function AnalyticsPage() {
   const { data: user } = useGetMe()
   const navigate = useNavigate()
   
-  const isPremium = user?.accountType === 'PREMIUM'
+  const isPremium = user?.accountType === 'premium'
 
   if (isLoading) {
     return (
@@ -74,7 +74,7 @@ export function AnalyticsPage() {
     )
   }
 
-  const data = overview.data || overview
+  const data = overview
   const currentMonth = data.currentMonth || {}
   const topCategories = data.topCategories || []
   const totalBalance = data.totalBalance || 0
