@@ -15,8 +15,15 @@ async def lifespan(app: FastAPI):
     print(f"📊 Database: {settings.DATABASE_HOST}:{settings.DATABASE_PORT}")
     print(f"💾 Redis: {settings.REDIS_HOST}:{settings.REDIS_PORT}")
 
-    create_tables()
+    # Database connection
+    try:
+        create_tables()
+        print("✅ Database connection successful")
+    except Exception as e:
+        print(f"⚠️ Database connection failed: {e}")
+        print("⚠️ Continuing without database (tables will be created on first connection)")
 
+    # Redis connection
     try:
         redis_client.ping()
         print("✅ Redis connection successful")
