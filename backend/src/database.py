@@ -7,11 +7,9 @@ from src.config import settings
 
 # Проверяем наличие DATABASE_URL
 if not settings.DATABASE_URL or settings.DATABASE_URL == "":
-    raise ValueError(
-        "DATABASE_URL is not configured! "
-        "Please set DATABASE_URL environment variable. "
-        "Example: postgresql://user:password@host:5432/dbname"
-    )
+    print("⚠️ WARNING: DATABASE_URL is not configured! Using default connection string.")
+    print("⚠️ Please set DATABASE_URL environment variable on Render.com")
+    print("⚠️ Example: postgresql://user:password@host:5432/dbname")
 
 engine = create_engine(
     settings.DATABASE_URL,
