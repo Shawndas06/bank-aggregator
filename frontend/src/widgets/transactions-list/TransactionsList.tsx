@@ -59,8 +59,9 @@ function TransactionsContent({ accounts }: { accounts: Account[] }) {
 
   const allTransactions: TransactionWithAccount[] = transactionQueries
     .flatMap((query, index) =>
-      (query.data || []).map((transaction: Transaction) => ({
+      (query.data || []).map((transaction) => ({
         ...transaction,
+        accountId: accounts[index].accountId,
         account: accounts[index],
       }))
     )

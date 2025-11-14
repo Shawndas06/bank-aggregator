@@ -1,13 +1,18 @@
 import type { ApiResponse } from './types'
 
 class ApiError extends Error {
+  status?: number
+  details?: unknown
+  
   constructor(
     message: string,
-    public status?: number,
-    public details?: unknown
+    status?: number,
+    details?: unknown
   ) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
+    this.details = details
   }
 }
 
