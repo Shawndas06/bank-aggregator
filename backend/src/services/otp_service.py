@@ -59,9 +59,16 @@ class OTPService:
         Отправка OTP кода на email
         """
         logger.info(f"📧 Отправка OTP на {email}")
+        logger.info(f"📧 SMTP настройки: enabled={settings.SMTP_ENABLED}, username={settings.SMTP_USERNAME[:3] + '***' if settings.SMTP_USERNAME else '(empty)'}, host={settings.SMTP_HOST}, port={settings.SMTP_PORT}")
         
-        if not settings.SMTP_ENABLED or not settings.SMTP_USERNAME:
+        if not settings.SMTP_ENABLED:
+            logger.warning(f"⚠️ SMTP_ENABLED={settings.SMTP_ENABLED} (type: {type(settings.SMTP_ENABLED)})")
             logger.info(f"💡 SMTP отключен. OTP код для {email}: {code}")
+            return
+        
+        if not settings.SMTP_USERNAME:
+            logger.warning(f"⚠️ SMTP_USERNAME пуст!")
+            logger.info(f"💡 SMTP_USERNAME не установлен. OTP код для {email}: {code}")
             return
         
         try:
@@ -117,15 +124,27 @@ class OTPService:
             msg.attach(part1)
             msg.attach(part2)
             
+            logger.info(f"🔌 Подключение к SMTP серверу: {settings.SMTP_HOST}:{settings.SMTP_PORT}")
             with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                logger.info(f"🔐 Запуск STARTTLS...")
                 server.starttls()
+                logger.info(f"🔑 Авторизация SMTP с username: {settings.SMTP_USERNAME[:3]}***")
                 server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+                logger.info(f"📤 Отправка сообщения на {email}...")
                 server.send_message(msg)
             
-            logger.info(f"✅ OTP код отправлен на {email}")
+            logger.info(f"✅ OTP код успешно отправлен на {email}")
             
+        except smtplib.SMTPAuthenticationError as e:
+            logger.error(f"❌ Ошибка аутентификации SMTP: {e}")
+            logger.error(f"❌ Проверьте SMTP_USERNAME и SMTP_PASSWORD в переменных окружения!")
+            logger.info(f"📧 Резервный вывод - OTP код для {email}: {code}")
+        except smtplib.SMTPException as e:
+            logger.error(f"❌ Ошибка SMTP: {e}")
+            logger.info(f"📧 Резервный вывод - OTP код для {email}: {code}")
         except Exception as e:
-            logger.error(f"❌ Ошибка отправки email: {e}")
+            logger.error(f"❌ Неожиданная ошибка отправки email: {type(e).__name__}: {e}")
+            logger.error(f"❌ Детали ошибки: {str(e)}")
             logger.info(f"📧 Резервный вывод - OTP код для {email}: {code}")
     
     @staticmethod
