@@ -20,6 +20,8 @@ export type SignUpRequest = {
   password: string
   name: string
   birthDate: string
+  phone: string
+  referral_code?: string
 }
 
 export type VerifyEmailRequest = {

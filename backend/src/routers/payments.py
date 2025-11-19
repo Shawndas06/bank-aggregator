@@ -33,38 +33,53 @@ async def transfer_by_phone(
     Это внутренний перевод в нашей системе.
     Деньги НЕ списываются с реального счета (это sandbox).
     """
-    payment, error = PaymentService.create_internal_transfer(
-        db,
-        current_user.id,
-        request.from_account_id,
-        request.to_phone,
-        request.amount,
-        request.description
-    )
-    
-    if error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error
+    try:
+        payment, error = PaymentService.create_internal_transfer(
+            db,
+            current_user.id,
+            request.from_account_id,
+            request.to_phone,
+            request.amount,
+            request.description
         )
-    
-    return {
-        "success": True,
-        "data": {
-            "message": f"Перевод {request.amount}₽ успешно выполнен!",
-            "payment": {
-                "id": payment.id,
-                "amount": payment.amount,
-                "currency": payment.currency,
-                "status": payment.status.value,
-                "to_name": payment.to_name,
-                "to_phone": payment.to_phone,
-                "description": payment.description,
-                "created_at": payment.created_at.isoformat(),
-                "completed_at": payment.completed_at.isoformat() if payment.completed_at else None
+        
+        if error:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error
+            )
+        
+        # Платеж уже сохранен в PaymentService.create_internal_transfer
+        # Просто обновляем его из БД
+        db.refresh(payment)
+        
+        return {
+            "success": True,
+            "data": {
+                "message": f"Перевод {request.amount}₽ успешно выполнен!",
+                "payment": {
+                    "id": payment.id,
+                    "amount": payment.amount,
+                    "currency": payment.currency,
+                    "status": payment.status.value,
+                    "to_name": payment.to_name,
+                    "to_phone": payment.to_phone,
+                    "description": payment.description,
+                    "created_at": payment.created_at.isoformat(),
+                    "completed_at": payment.completed_at.isoformat() if payment.completed_at else None
+                }
             }
         }
-    }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка создания перевода: {str(e)}"
+        )
 
 
 @router.post("/transfer-card", response_model=dict)
@@ -170,9 +185,12 @@ async def get_payment_history(
                 "description": p.description,
                 "toName": p.to_name,
                 "toPhone": p.to_phone,
+                "toUserId": p.to_user_id,  # Добавляем ID получателя
+                "fromUserId": p.user_id,  # Добавляем ID отправителя
                 "fromAccountName": p.from_account_name,
                 "createdAt": p.created_at.isoformat(),
-                "completedAt": p.completed_at.isoformat() if p.completed_at else None
+                "completedAt": p.completed_at.isoformat() if p.completed_at else None,
+                "isIncoming": p.to_user_id == current_user.id if p.to_user_id else False  # Флаг входящего платежа
             }
             for p in payments
         ],

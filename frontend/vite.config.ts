@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['vite.svg'],
+      includeAssets: ['icons/*.png'],
       manifest: {
         name: 'Банк Агрегатор',
         short_name: 'BankApp',
@@ -20,10 +20,14 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: '/vite.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
+            src: '/icons/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/icons/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
           }
         ]
       },
@@ -57,10 +61,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: '0.0.0.0',
+    host: '0.0.0.0', // Позволяет доступ с других устройств в сети
     proxy: {
       '/api': {
-        target: 'http://172.17.0.1:8000',
+        target: 'http://localhost:8000', // Backend на localhost:8000
         changeOrigin: true,
         secure: false,
       }

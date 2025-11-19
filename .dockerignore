@@ -1,65 +1,50 @@
-# Docker ignore для оптимизации сборки
-
-# Node modules
-**/node_modules/
-**/.pnpm-store/
-
-# Python
-**/__pycache__/
-**/*.pyc
-**/*.pyo
-**/*.pyd
-**/.Python
-**/env/
-**/venv/
-**/.venv/
-
-# Build artifacts
-**/dist/
-**/build/
-**/.next/
-**/.nuxt/
-
-# Logs
-**/logs/
-**/*.log
-
-# IDE
-**/.vscode/
-**/.idea/
-**/*.swp
-**/*.swo
-
 # Git
-.git/
+.git
 .gitignore
 
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
+htmlcov
+
+# Virtual environment
+venv
+env
+ENV
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
 # Docker
-**/Dockerfile
-**/docker-compose*.yaml
-**/.dockerignore
+.dockerignore
+Dockerfile
+docker-compose.yaml
 
-# Environment
-**/.env
-**/.env.local
-**/.env.*.local
+# Logs
+*.log
+logs
 
-# Testing
-**/coverage/
-**/.pytest_cache/
-**/.coverage
-
-# Documentation
-**/README.md
-**/*.md
-**/docs/
-
-# Presentation files
-presentation.html
-PITCH_SPEECH.md
-presentation_text.txt
-
-# Misc
+# OS
 .DS_Store
-*.db
-*.sqlite
+Thumbs.db
+
+# Documentation (не нужны в образе)
+*.md
+!requirements.txt
+
+# Temp files
+*.tmp
+*.bak
+

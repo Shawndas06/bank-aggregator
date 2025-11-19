@@ -1,18 +1,14 @@
 import type { ApiResponse } from './types'
+import { API_BASE_URL } from '@shared/config/constants'
 
 class ApiError extends Error {
-  status?: number
-  details?: unknown
-  
   constructor(
     message: string,
-    status?: number,
-    details?: unknown
+    public status?: number,
+    public details?: unknown
   ) {
     super(message)
     this.name = 'ApiError'
-    this.status = status
-    this.details = details
   }
 }
 
@@ -41,7 +37,10 @@ async function request<T>(url: string, options: RequestOptions = {}): Promise<T>
   }
 
   try {
-    const response = await fetch(finalUrl, {
+    // Если URL не начинается с http, добавляем API_BASE_URL
+    const apiUrl = finalUrl.startsWith('http') ? finalUrl : `${API_BASE_URL}${finalUrl}`
+    
+    const response = await fetch(apiUrl, {
       method,
       credentials: 'include', // Important for cookies
       headers: {

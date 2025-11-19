@@ -10,11 +10,14 @@ import type { Account, Balance, Transaction } from '../model/types'
 
 function mapAccount(response: AccountResponse): Account {
   return {
+    id: (response as any).id,
     accountId: response.accountId,
     clientId: response.clientId,
     clientName: response.clientName,
     accountName: response.accountName,
     isActive: response.isActive,
+    isHidden: (response as any).isHidden,
+    priority: (response as any).priority,
   }
 }
 

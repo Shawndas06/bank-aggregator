@@ -58,7 +58,7 @@ services:
       SECRET_KEY: "vtb-hackathon-2025-bank-aggregator-secret-key"
       ALGORITHM: "HS256"
       SESSION_EXPIRE_HOURS: 24
-      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:8080"
+      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:8080,http://192.168.0.104:5173,http://192.168.0.104:5174"
       OTP_CODE: "123456"
       OTP_EXPIRE_MINUTES: 10
       SMTP_HOST: smtp.yandex.ru

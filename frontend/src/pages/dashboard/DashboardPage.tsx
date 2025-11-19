@@ -14,7 +14,7 @@ export function DashboardPage() {
 
   if (!accounts?.length) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
         <MobileHeader />
         <main className="container mx-auto px-4 py-6">
           <motion.div
@@ -31,7 +31,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
       <MobileHeader />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
@@ -41,8 +41,8 @@ export function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="mb-2 text-2xl font-bold text-gray-900">Главная</h2>
-          <p className="text-gray-600">Обзор ваших финансов</p>
+          <h2 className="mb-2 text-2xl font-bold text-white">Главная</h2>
+          <p className="text-gray-300">Обзор ваших финансов</p>
         </motion.div>
 
         {/* Быстрые действия */}
@@ -70,7 +70,7 @@ export function DashboardPage() {
             <QuickActionCard 
               icon={<Plus className="h-6 w-6" />} 
               label="Еще" 
-              onClick={() => alert('🔜 Дополнительные функции в разработке!')} 
+              onClick={() => navigate('/referrals')} 
             />
           </div>
         </motion.div>
@@ -90,7 +90,15 @@ export function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">Последние транзакции</h3>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white">Последние транзакции</h3>
+            <button
+              onClick={() => navigate('/transactions')}
+              className="text-sm text-blue-400 hover:text-blue-300"
+            >
+              Все транзакции →
+            </button>
+          </div>
           <TransactionsList />
         </motion.div>
       </main>
@@ -110,10 +118,10 @@ function QuickActionCard({ icon, label, onClick }: QuickActionCardProps) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:scale-105 hover:shadow-md active:scale-95"
+      className="flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-4 shadow-lg transition-all hover:scale-105 hover:bg-slate-700/50 active:scale-95"
     >
-      <div className="text-purple-600">{icon}</div>
-      <span className="text-xs font-medium text-gray-700">{label}</span>
+      <div className="text-blue-400">{icon}</div>
+      <span className="text-xs font-medium text-gray-200">{label}</span>
     </button>
   )
 }

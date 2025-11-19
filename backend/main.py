@@ -1,45 +1,27 @@
-import sys
-import traceback
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
-try:
-    from src.config import settings
-    from src.database import create_tables
-    from src.redis_client import redis_client
-    from src.routers import auth, accounts, groups, analytics, loyalty_cards, payments, premium, savings, family_budget, verification
-except Exception as e:
-    print(f"❌ Error importing modules: {e}")
-    print(traceback.format_exc())
-    sys.exit(1)
+from src.config import settings
+from src.database import create_tables
+from src.redis_client import redis_client
+
+from src.routers import auth, accounts, groups, analytics, loyalty_cards, payments, premium, savings, family_budget, verification, referrals, cashback, subscriptions, partners, mock_bank
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Starting Bank Aggregator API...")
-    # Логируем DATABASE_URL без пароля для безопасности
-    db_url_safe = settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else "not configured"
-    print(f"📊 Database: {db_url_safe}")
+    print(f"📊 Database: {settings.DATABASE_HOST}:{settings.DATABASE_PORT}")
     print(f"💾 Redis: {settings.REDIS_HOST}:{settings.REDIS_PORT}")
-    
-    # Проверяем, что DATABASE_URL установлен
-    if not settings.DATABASE_URL or settings.DATABASE_URL == "":
-        print("❌ WARNING: DATABASE_URL is not set! Please configure it in environment variables.")
 
-    # Database connection
-    try:
-        create_tables()
-    except Exception as e:
-        print(f"⚠️ Database connection failed: {e}")
-        print("⚠️ Continuing without database (tables will be created on first connection)")
+    create_tables()
 
-    # Redis connection
     try:
         redis_client.ping()
         print("✅ Redis connection successful")
     except Exception as e:
-        print(f"⚠️ Redis connection failed: {e} (continuing without Redis)")
+        print(f"❌ Redis connection failed: {e}")
 
     print("✨ Application started successfully!")
 
@@ -64,8 +46,24 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    if settings.DEBUG:
-        print(f"❌ Error: {exc}")
+    import traceback
+    error_details = traceback.format_exc() if settings.DEBUG else None
+    print(f"❌ Global Error Handler: {exc}")
+    if error_details:
+        print(f"📋 Traceback:\n{error_details}")
+    
+    # Если это HTTPException, возвращаем его как есть
+    from fastapi import HTTPException
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "success": False,
+                "error": {
+                    "message": exc.detail
+                }
+            }
+        )
 
     return JSONResponse(
         status_code=500,
@@ -87,6 +85,11 @@ app.include_router(premium.router)
 app.include_router(savings.router)
 app.include_router(family_budget.router)
 app.include_router(verification.router)
+app.include_router(referrals.router)
+app.include_router(cashback.router)
+app.include_router(subscriptions.router)
+app.include_router(partners.router)
+app.include_router(mock_bank.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():
@@ -101,40 +104,20 @@ async def health_check():
 
 @app.get("/health", tags=["Health"])
 async def health():
-    """Health check с проверкой зависимостей"""
-    redis_status = "unhealthy"
-    db_status = "unknown"
-    
+    redis_status = "healthy"
     try:
         redis_client.ping()
-        redis_status = "healthy"
-    except Exception as e:
-        print(f"⚠️ Redis health check failed: {e}")
-    
-    try:
-        from src.database import engine
-        with engine.connect() as conn:
-            from sqlalchemy import text
-            conn.execute(text("SELECT 1"))
-        db_status = "healthy"
-    except Exception as e:
-        print(f"⚠️ Database health check failed: {e}")
-        db_status = "unhealthy"
+    except:
+        redis_status = "unhealthy"
 
     return {
         "success": True,
         "data": {
             "api": "healthy",
-            "database": db_status,
             "redis": redis_status,
             "version": settings.APP_VERSION
         }
     }
-
-@app.get("/api/health", tags=["Health"])
-async def api_health():
-    """Health check через /api/ для Nginx"""
-    return await health()
 
 if __name__ == "__main__":
     import uvicorn

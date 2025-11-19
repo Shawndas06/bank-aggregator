@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Boolean, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Date, Boolean, DateTime, Enum, Numeric, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from src.database import Base
@@ -20,6 +20,10 @@ class User(Base):
         nullable=False
     )
     is_verified = Column(Boolean, default=False, nullable=False)
+    # Referral system fields
+    referral_code = Column(String(50), unique=True, index=True, nullable=True)
+    referred_by_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    referral_rewards = Column(Numeric(10, 2), default=0, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -36,6 +40,8 @@ class User(Base):
     payments = relationship("Payment", foreign_keys="[Payment.user_id]", back_populates="user", cascade="all, delete-orphan")
     payment_templates = relationship("PaymentTemplate", back_populates="user", cascade="all, delete-orphan")
     savings_goals = relationship("SavingsGoal", back_populates="user", cascade="all, delete-orphan")
+    # Referral relationships
+    referred_by = relationship("User", remote_side=[id], foreign_keys=[referred_by_id])
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name})>"

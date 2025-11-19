@@ -56,7 +56,6 @@ export function GroupTransactionsPage() {
     .flatMap((query, index) =>
       (query.data || []).map((transaction: Transaction) => ({
         ...transaction,
-        accountId: accounts![index].accountId,
         account: accounts![index],
       }))
     )
@@ -67,7 +66,7 @@ export function GroupTransactionsPage() {
 
   if (!group) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
         <MobileHeader />
         <main className="container mx-auto px-4 py-6">
           <p className="text-center text-gray-500">Группа не найдена</p>

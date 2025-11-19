@@ -15,7 +15,21 @@ import { AnalyticsPage } from '@pages/analytics'
 import { PaymentsPage } from '@pages/payments'
 import { LoyaltyCardsPage } from '@pages/loyalty-cards'
 import { QRScannerPage } from '@pages/qr-scanner'
+import { ReferralsPage } from '@pages/referrals'
+import { TransactionsPage } from '@pages/transactions'
 import { ROUTES } from '@shared/config'
+
+// Временная заглушка для страницы кешбека
+const CashbackPage = () => {
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20 flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Кешбек</h2>
+        <p className="text-gray-600">Страница в разработке</p>
+      </div>
+    </div>
+  )
+}
 
 export const router = createBrowserRouter([
   {
@@ -82,6 +96,18 @@ export const router = createBrowserRouter([
   {
     path: '/qr-scanner',
     element: <QRScannerPage />,
+  },
+  {
+    path: ROUTES.REFERRALS,
+    element: <ReferralsPage />,
+  },
+  {
+    path: ROUTES.CASHBACK,
+    element: <CashbackPage />,
+  },
+  {
+    path: '/transactions',
+    element: <TransactionsPage />,
   },
   {
     path: '*',

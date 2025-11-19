@@ -8,7 +8,7 @@ import { Button, Card, CardContent } from '@shared/ui'
 import { apiClient } from '@shared/api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useGetAccounts } from '@entities/account'
-import { Crown, Check, Zap, Users, BarChart, Headphones, ArrowLeft } from 'lucide-react'
+import { Crown, Check, X, Zap, Users, BarChart, Headphones, ArrowLeft } from 'lucide-react'
 
 export function PremiumPage() {
   const navigate = useNavigate()
@@ -17,19 +17,35 @@ export function PremiumPage() {
   const queryClient = useQueryClient()
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const isPremium = user?.accountType === 'premium'
+  const isPremium = user?.accountType === 'PREMIUM'
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const purchaseMutation = useMutation({
     mutationFn: (fromAccountId: number) =>
       apiClient.post('/api/premium/purchase', { fromAccountId }),
     onSuccess: () => {
-      alert('🎉 Поздравляем!\n\nВы стали Premium клиентом!\n\nВсе функции разблокированы!')
+      setShowSuccessModal(true)
+      // Обновляем все связанные данные
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['payments', 'history'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      // Обновляем балансы всех счетов
+      accounts?.forEach((acc: any) => {
+        queryClient.invalidateQueries({ queryKey: ['balances', acc.accountId, acc.clientId] })
+      })
       setIsProcessing(false)
-      navigate('/profile')
+      setTimeout(() => {
+        setShowSuccessModal(false)
+        navigate('/profile')
+      }, 2000)
     },
     onError: (error: any) => {
-      alert(`❌ Ошибка оплаты\n\n${error?.message || 'Недостаточно средств или попробуйте позже'}`)
+      setErrorMessage(error?.message || 'Недостаточно средств или попробуйте позже')
+      setShowErrorModal(true)
       setIsProcessing(false)
     }
   })
@@ -82,13 +98,39 @@ export function PremiumPage() {
     if (!confirm) return
 
     setIsProcessing(true)
-    const firstAccountId = (accounts[0] as any).id
-    purchaseMutation.mutate(firstAccountId)
+    // Находим счет с наивысшим приоритетом (приоритет 1 = первый)
+    const sortedAccounts = [...accounts].sort((a: any, b: any) => {
+      const priorityA = a.priority || 999
+      const priorityB = b.priority || 999
+      return priorityA - priorityB
+    })
+    
+    const accountToUse = sortedAccounts[0] as any
+    const accountId = accountToUse.id || accountToUse.accountId
+    
+    if (!accountId) {
+      setErrorMessage('Не удалось определить счет для оплаты')
+      setShowErrorModal(true)
+      setIsProcessing(false)
+      return
+    }
+    
+    // Убеждаемся, что accountId - это число
+    const numericAccountId = typeof accountId === 'string' ? parseInt(accountId, 10) : accountId
+    if (isNaN(numericAccountId)) {
+      setErrorMessage('Неверный формат ID счета')
+      setShowErrorModal(true)
+      setIsProcessing(false)
+      return
+    }
+    
+    console.log('💳 Покупка Premium, accountId:', numericAccountId)
+    purchaseMutation.mutate(numericAccountId)
   }
 
   if (isPremium) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
         <MobileHeader />
         <main className="container mx-auto px-4 py-6">
           <button
@@ -113,7 +155,7 @@ export function PremiumPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-blue-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
       <MobileHeader />
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl">

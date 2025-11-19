@@ -30,3 +30,17 @@ export function useGetCategoriesBreakdown() {
   })
 }
 
+export function useGetAdvancedInsights() {
+  return useQuery({
+    queryKey: ['analytics', 'insights'],
+    queryFn: async () => {
+      const data = await apiClient.get<any>('/api/analytics/insights')
+      return data
+    },
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // 5 минут
+    gcTime: 1000 * 60 * 10, // 10 минут в кеше
+    refetchOnWindowFocus: false,
+  })
+}
+

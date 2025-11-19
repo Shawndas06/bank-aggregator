@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { UserPlus, Eye, EyeOff } from 'lucide-react'
 import {
   Form,
@@ -20,10 +20,20 @@ import { ApiError } from '@shared/api'
 
 export function SignUpForm() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { mutate: signUp, isPending } = useSignUp()
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [referralCode, setReferralCode] = useState<string | null>(null)
+
+  // Получаем реферальный код из URL
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (ref) {
+      setReferralCode(ref)
+    }
+  }, [searchParams])
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -41,7 +51,12 @@ export function SignUpForm() {
     setError(null)
     // Remove confirmPassword before sending to backend
     const { confirmPassword: _, ...signUpData } = data
-    signUp(signUpData, {
+    // Добавляем реферальный код, если он есть
+    const signUpPayload = referralCode
+      ? { ...signUpData, referral_code: referralCode }
+      : signUpData
+    
+    signUp(signUpPayload, {
       onSuccess: () => {
         navigate(ROUTES.VERIFY_EMAIL, {
           state: { email: data.email },
@@ -63,6 +78,12 @@ export function SignUpForm() {
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             {error}
+          </div>
+        )}
+
+        {referralCode && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            🎁 Вы регистрируетесь по реферальной ссылке! Вы и ваш друг получите награды после регистрации.
           </div>
         )}
 

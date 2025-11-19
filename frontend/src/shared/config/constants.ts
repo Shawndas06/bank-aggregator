@@ -1,6 +1,21 @@
-// Используем относительный путь для production (через nginx proxy)
-// Или переменную окружения для разработки
-export const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8000')
+// Определяем базовый URL API автоматически
+// Если мы на localhost - используем localhost, иначе используем относительный путь (proxy)
+const getApiBaseUrl = () => {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:8000'
+  }
+  
+  // Если мы на localhost или 127.0.0.1 - используем localhost
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8000'
+  }
+  
+  // Для доступа с других устройств используем относительный путь (proxy через Vite)
+  // Vite proxy будет проксировать /api на backend
+  return ''
+}
+
+export const API_BASE_URL = getApiBaseUrl()
 
 export const ROUTES = {
   HOME: '/',
@@ -12,6 +27,9 @@ export const ROUTES = {
   GROUPS: '/groups',
   PROFILE: '/profile',
   PREMIUM: '/premium',
+  REFERRALS: '/referrals',
+  CASHBACK: '/cashback',
+  SUBSCRIPTIONS: '/subscriptions',
 } as const
 
 export const BANK_NAMES = {

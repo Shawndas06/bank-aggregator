@@ -18,7 +18,7 @@ import {
   X
 } from 'lucide-react'
 
-type ModalType = 'create-account' | 'loyalty-cards' | 'set-priority' | null
+type ModalType = 'create-account' | 'loyalty-cards' | 'set-priority' | 'account-settings' | null
 
 export function AccountsPage() {
   const { data: accounts } = useGetAccounts()
@@ -26,7 +26,7 @@ export function AccountsPage() {
   const queryClient = useQueryClient()
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: 'linear-gradient(135deg, #DBEAFE 0%, #FFFFFF 50%, #E0E7FF 100%)' }}>
+    <div className="min-h-screen pb-20 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <MobileHeader />
 
       <main className="container mx-auto px-4 py-6">
@@ -35,10 +35,10 @@ export function AccountsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="mb-2 text-3xl font-bold" style={{ background: 'linear-gradient(90deg, #3B82F6 0%, #6366F1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h2 className="mb-2 text-3xl font-bold text-white">
             Счета
           </h2>
-          <p className="text-gray-700 text-base font-medium">Управление банковскими счетами</p>
+          <p className="text-gray-300 text-base font-medium">Управление банковскими счетами</p>
         </motion.div>
 
         {/* Быстрые действия */}
@@ -70,7 +70,7 @@ export function AccountsPage() {
             icon={<Sparkles className="h-5 w-5" />}
             color="cyan"
             label="Настройки"
-            onClick={() => alert('⚙️ Настройки счетов:\n\n• Переименование\n• Синхронизация\n• Скрытие балансов\n\nДоступно в меню каждого счета')}
+            onClick={() => setActiveModal('account-settings')}
           />
         </motion.div>
 
@@ -92,7 +92,7 @@ export function AccountsPage() {
           onClose={() => setActiveModal(null)}
           onSuccess={() => {
             setActiveModal(null)
-            queryClient.invalidateQueries({ queryKey: ['accounts'] })
+            queryClient.invalidateQueries(['accounts'])
           }}
         />
       )}
@@ -105,6 +105,17 @@ export function AccountsPage() {
 
       {activeModal === 'set-priority' && (
         <SetPriorityModal
+          accounts={accounts || []}
+          onClose={() => setActiveModal(null)}
+          onSuccess={() => {
+            setActiveModal(null)
+            queryClient.invalidateQueries({ queryKey: ['accounts'] })
+          }}
+        />
+      )}
+
+      {activeModal === 'account-settings' && (
+        <AccountSettingsModal
           accounts={accounts || []}
           onClose={() => setActiveModal(null)}
           onSuccess={() => {
@@ -288,7 +299,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
     mutationFn: (data: any) => apiClient.post('/api/loyalty-cards', data),
     onSuccess: () => {
       alert('✅ Карта добавлена!')
-      queryClient.invalidateQueries({ queryKey: ['loyalty-cards'] })
+      queryClient.invalidateQueries(['loyalty-cards'])
       setShowAddForm(false)
       setFormData({ cardType: 'MAGNIT', cardNumber: '', cardName: '' })
     },
@@ -301,7 +312,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
     mutationFn: (cardId: number) => apiClient.delete(`/api/loyalty-cards/${cardId}`),
     onSuccess: () => {
       alert('✅ Карта удалена!')
-      queryClient.invalidateQueries({ queryKey: ['loyalty-cards'] })
+      queryClient.invalidateQueries(['loyalty-cards'])
     }
   })
 
@@ -321,7 +332,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
     })
   }
 
-  const loyaltyCards = Array.isArray(cardsData) ? cardsData : (cardsData as any)?.data || []
+  const loyaltyCards = cardsData?.cards || []
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
@@ -458,18 +469,29 @@ function SetPriorityModal({
   onClose: () => void, 
   onSuccess: () => void 
 }) {
-  const [priorities, setPriorities] = useState<Record<number, number>>(
-    accounts.reduce((acc, account, idx) => ({
-      ...acc,
-      [account.id]: idx + 1
-    }), {})
+  const [priorities, setPriorities] = useState<Record<string | number, number>>(
+    accounts.reduce((acc, account, idx) => {
+      const accountKey = account.id || `${account.clientId}-${account.accountId}`
+      return {
+        ...acc,
+        [accountKey]: idx + 1
+      }
+    }, {} as Record<string | number, number>)
   )
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const promises = Object.entries(priorities).map(([accountId, priority]) =>
-        apiClient.put(`/api/accounts/${accountId}/priority?priority=${priority}`)
-      )
+      const promises = Object.entries(priorities).map(([accountKey, priority]) => {
+        // Если accountKey это число (ID), используем его, иначе ищем account по ключу
+        const account = accounts.find(acc => {
+          const key = acc.id || `${acc.clientId}-${acc.accountId}`
+          return String(key) === String(accountKey)
+        })
+        if (account && account.id) {
+          return apiClient.put(`/api/accounts/${account.id}/priority?priority=${priority}`)
+        }
+        return Promise.resolve()
+      })
       return Promise.all(promises)
     },
     onSuccess: () => {
@@ -500,31 +522,35 @@ function SetPriorityModal({
         </p>
 
         <div className="space-y-3 mb-4">
-          {accounts.map((account) => (
-            <Card key={`priority-${account.id || account.accountId}-${account.clientId}`}>
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{account.accountName}</p>
-                    <p className="text-xs text-gray-500">{account.clientName}</p>
+          {accounts.map((account) => {
+            const accountKey = account.id || `${account.clientId}-${account.accountId}`
+            return (
+              <Card key={`priority-${accountKey}`}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{account.accountName}</p>
+                      <p className="text-xs text-gray-500">{account.clientName}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={priorities[accountKey] || 1}
+                        onChange={(e) => {
+                          const newPriorities = { ...priorities }
+                          newPriorities[accountKey] = parseInt(e.target.value) || 1
+                          setPriorities(newPriorities)
+                        }}
+                        className="w-16 rounded border border-gray-300 px-2 py-1 text-center text-sm"
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={priorities[account.id || 0] || 1}
-                      onChange={(e) => setPriorities({
-                        ...priorities,
-                        [account.id || 0]: parseInt(e.target.value) || 1
-                      })}
-                      className="w-16 rounded border border-gray-300 px-2 py-1 text-center text-sm"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
         <div className="flex gap-3">
@@ -537,6 +563,260 @@ function SetPriorityModal({
             className="flex-1 bg-purple-600 hover:bg-purple-700"
           >
             {saveMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+// Модалка настроек счетов
+function AccountSettingsModal({
+  accounts,
+  onClose,
+  onSuccess
+}: {
+  accounts: any[]
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [selectedAction, setSelectedAction] = useState<'rename' | 'sync' | 'hide' | null>(null)
+  const [selectedAccount, setSelectedAccount] = useState<any>(null)
+  const [newName, setNewName] = useState('')
+  const queryClient = useQueryClient()
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ accountId, newName }: { accountId: number, newName: string }) => {
+      return apiClient.put(`/api/accounts/${accountId}/rename`, { accountName: newName })
+    },
+    onSuccess: () => {
+      alert('✅ Счет успешно переименован!')
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      onSuccess()
+    },
+    onError: (error: any) => {
+      alert(error?.message || 'Ошибка переименования счета')
+    }
+  })
+
+  const hideMutation = useMutation({
+    mutationFn: async (accountId: number) => {
+      return apiClient.put(`/api/accounts/${accountId}/toggle-visibility`)
+    },
+    onSuccess: () => {
+      alert('✅ Баланс счета скрыт!')
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      onSuccess()
+    },
+    onError: (error: any) => {
+      alert(error?.message || 'Ошибка скрытия баланса')
+    }
+  })
+
+  const syncMutation = useMutation({
+    mutationFn: async (accountId: number) => {
+      return apiClient.post(`/api/accounts/${accountId}/sync`)
+    },
+    onSuccess: () => {
+      alert('✅ Счет успешно синхронизирован!')
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      onSuccess()
+    },
+    onError: (error: any) => {
+      alert(error?.message || 'Ошибка синхронизации счета')
+    }
+  })
+
+  if (!selectedAction) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md rounded-2xl bg-white p-6"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-gray-900">Настройки счетов</h3>
+            <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-100">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => setSelectedAction('rename')}
+              className="w-full flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="text-blue-600 font-semibold">📝</span>
+              </div>
+              <div className="flex-1 text-left">
+                <div className="font-medium text-gray-900">Переименовать счет</div>
+                <div className="text-sm text-gray-500">Изменить название счета</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setSelectedAction('sync')}
+              className="w-full flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-green-600 font-semibold">🔄</span>
+              </div>
+              <div className="flex-1 text-left">
+                <div className="font-medium text-gray-900">Синхронизация</div>
+                <div className="text-sm text-gray-500">Обновить данные счета</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setSelectedAction('hide')}
+              className="w-full flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                <span className="text-purple-600 font-semibold">👁️</span>
+              </div>
+              <div className="flex-1 text-left">
+                <div className="font-medium text-gray-900">Скрытие баланса</div>
+                <div className="text-sm text-gray-500">Скрыть баланс счета</div>
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <Button variant="outline" onClick={onClose} className="w-full">
+              Отмена
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  if (!selectedAccount) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md rounded-2xl bg-white p-6 max-h-[80vh] overflow-y-auto"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-gray-900">
+              {selectedAction === 'rename' && 'Переименовать счет'}
+              {selectedAction === 'sync' && 'Синхронизация счета'}
+              {selectedAction === 'hide' && 'Скрыть баланс'}
+            </h3>
+            <button onClick={() => setSelectedAction(null)} className="rounded-full p-1 hover:bg-gray-100">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <p className="mb-4 text-sm text-gray-600">Выберите счет:</p>
+
+          <div className="space-y-2 mb-4">
+            {accounts.map((account) => (
+              <button
+                key={account.id || `${account.clientId}-${account.accountId}`}
+                onClick={() => setSelectedAccount(account)}
+                className="w-full p-3 rounded-lg border border-gray-200 hover:bg-gray-50 text-left transition-colors"
+              >
+                <div className="font-medium text-gray-900">{account.accountName}</div>
+                <div className="text-sm text-gray-500">{account.clientName}</div>
+              </button>
+            ))}
+          </div>
+
+          <Button variant="outline" onClick={() => setSelectedAction(null)} className="w-full">
+            Назад
+          </Button>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // Финальный шаг - выполнение действия
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md rounded-2xl bg-white p-6"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-xl font-bold text-gray-900">
+            {selectedAction === 'rename' && 'Переименовать счет'}
+            {selectedAction === 'sync' && 'Синхронизация'}
+            {selectedAction === 'hide' && 'Скрыть баланс'}
+          </h3>
+          <button onClick={onClose} className="rounded-full p-1 hover:bg-gray-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="text-sm text-gray-600 mb-1">Выбранный счет:</div>
+          <div className="font-medium text-gray-900">{selectedAccount.accountName}</div>
+          <div className="text-xs text-gray-500">{selectedAccount.clientName}</div>
+        </div>
+
+        {selectedAction === 'rename' && (
+          <div className="mb-4">
+            <Label>Новое название счета</Label>
+            <Input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder={selectedAccount.accountName}
+              className="mt-1"
+            />
+          </div>
+        )}
+
+        {selectedAction === 'sync' && (
+          <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-gray-700">
+              Счет будет синхронизирован с банком. Это может занять несколько секунд.
+            </p>
+          </div>
+        )}
+
+        {selectedAction === 'hide' && (
+          <div className="mb-4 p-4 bg-orange-50 rounded-lg">
+            <p className="text-sm text-gray-700">
+              Баланс этого счета будет скрыт. Вы сможете отобразить его позже в настройках.
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setSelectedAccount(null)} className="flex-1">
+            Назад
+          </Button>
+          <Button
+            onClick={() => {
+              if (selectedAction === 'rename') {
+                if (!newName.trim()) {
+                  alert('❌ Введите новое название счета')
+                  return
+                }
+                renameMutation.mutate({ accountId: selectedAccount.id, newName: newName.trim() })
+              } else if (selectedAction === 'sync') {
+                syncMutation.mutate(selectedAccount.id)
+              } else if (selectedAction === 'hide') {
+                hideMutation.mutate(selectedAccount.id)
+              }
+            }}
+            disabled={renameMutation.isPending || syncMutation.isPending || hideMutation.isPending}
+            className="flex-1 bg-purple-600 hover:bg-purple-700"
+          >
+            {renameMutation.isPending || syncMutation.isPending || hideMutation.isPending
+              ? 'Обработка...'
+              : selectedAction === 'rename'
+              ? 'Переименовать'
+              : selectedAction === 'sync'
+              ? 'Синхронизировать'
+              : 'Скрыть'}
           </Button>
         </div>
       </motion.div>

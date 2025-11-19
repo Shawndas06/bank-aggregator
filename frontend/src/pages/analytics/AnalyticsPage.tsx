@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { MobileHeader } from '@widgets/header'
 import { BottomNavigation } from '@widgets/bottom-navigation'
 import { Card, CardContent, Button, Progress } from '@shared/ui'
-import { useGetAnalyticsOverview, useGetCategoriesBreakdown } from '@entities/analytics'
+import { useGetAnalyticsOverview, useGetCategoriesBreakdown, useGetAdvancedInsights } from '@entities/analytics'
 import { useGetMe } from '@entities/user'
 import { formatCurrency } from '@shared/lib/utils'
 import { 
@@ -29,10 +29,12 @@ export function AnalyticsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month')
   const { data: overview, isLoading } = useGetAnalyticsOverview()
   const { data: categories } = useGetCategoriesBreakdown()
+  const { data: insightsData } = useGetAdvancedInsights()
   const { data: user } = useGetMe()
   const navigate = useNavigate()
   
-  const isPremium = user?.accountType === 'premium'
+  const isPremium = user?.accountType === 'PREMIUM'
+  const insights = insightsData?.data || insightsData
 
   if (isLoading) {
     return (
@@ -74,7 +76,7 @@ export function AnalyticsPage() {
     )
   }
 
-  const data = overview
+  const data = overview.data || overview
   const currentMonth = data.currentMonth || {}
   const topCategories = data.topCategories || []
   const totalBalance = data.totalBalance || 0
@@ -83,7 +85,7 @@ export function AnalyticsPage() {
   const expenseChange = currentMonth.expenseChange || 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
       <MobileHeader />
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-4xl">
@@ -92,8 +94,8 @@ export function AnalyticsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h2 className="mb-1 sm:mb-2 text-xl sm:text-2xl font-bold text-gray-900">Аналитика</h2>
-          <p className="text-sm sm:text-base text-gray-600">Детальный анализ ваших финансов</p>
+          <h2 className="mb-1 sm:mb-2 text-xl sm:text-2xl font-bold text-white">Аналитика</h2>
+          <p className="text-sm sm:text-base text-gray-300">Детальный анализ ваших финансов</p>
         </motion.div>
 
         {/* Выбор периода */}
@@ -102,7 +104,7 @@ export function AnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="flex justify-center gap-1.5 sm:gap-2 rounded-xl bg-white p-1.5 sm:p-2 shadow-sm">
+          <div className="flex justify-center gap-1.5 sm:gap-2 rounded-xl bg-slate-800/80 backdrop-blur-sm p-1.5 sm:p-2 shadow-lg border border-slate-700/50">
             <Button
               variant={selectedPeriod === 'week' ? 'default' : 'ghost'}
               size="sm"
@@ -138,7 +140,7 @@ export function AnalyticsPage() {
           className="grid grid-cols-3 gap-2 sm:gap-4"
         >
           {/* Баланс */}
-          <Card>
+          <Card className="bg-slate-800/70 backdrop-blur-sm border-slate-700/50 shadow-lg">
             <CardContent className="p-2.5 sm:p-4">
               <div className="mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2 text-purple-600">
                 <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -151,7 +153,7 @@ export function AnalyticsPage() {
           </Card>
 
           {/* Расходы */}
-          <Card>
+          <Card className="bg-slate-800/70 backdrop-blur-sm border-slate-700/50 shadow-lg">
             <CardContent className="p-2.5 sm:p-4">
               <div className="mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2 text-red-600">
                 <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -164,7 +166,7 @@ export function AnalyticsPage() {
           </Card>
 
           {/* Доходы */}
-          <Card>
+          <Card className="bg-slate-800/70 backdrop-blur-sm border-slate-700/50 shadow-lg">
             <CardContent className="p-2.5 sm:p-4">
               <div className="mb-1 sm:mb-2 flex items-center gap-1 sm:gap-2 text-green-600">
                 <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -184,10 +186,10 @@ export function AnalyticsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-gray-900">Топ категории расходов</h3>
+            <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-white">Топ категории расходов</h3>
             <div className="space-y-3">
               {topCategories.map((cat: any) => (
-                <Card key={cat.category}>
+                <Card key={cat.category} className="bg-slate-800/70 backdrop-blur-sm border-slate-700/50 shadow-lg">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
@@ -220,10 +222,10 @@ export function AnalyticsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Все категории</h3>
+            <h3 className="mb-4 text-lg font-semibold text-white">Все категории</h3>
             <div className="space-y-3">
               {categories.map((cat: any) => (
-                <Card key={cat.category}>
+                <Card key={cat.category} className="bg-slate-800/70 backdrop-blur-sm border-slate-700/50 shadow-lg">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -246,14 +248,14 @@ export function AnalyticsPage() {
           </motion.div>
         )}
 
-        {/* Premium Analytics Block */}
+            {/* Premium Analytics Block */}
         {!isPremium && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 via-white to-blue-50">
+            <Card className="border-2 border-purple-500/50 bg-gradient-to-br from-slate-800/90 via-slate-700/90 to-slate-800/90 backdrop-blur-sm shadow-lg">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 p-3">
@@ -319,9 +321,9 @@ export function AnalyticsPage() {
             </h3>
             
             {/* График расходов по дням */}
-            <Card className="mb-4">
+            <Card className="mb-4 bg-slate-800/70 backdrop-blur-sm border-slate-700/50 shadow-lg">
               <CardContent className="p-6">
-                <h4 className="mb-4 font-semibold text-gray-900">График расходов за месяц</h4>
+                <h4 className="mb-4 font-semibold text-white">График расходов за месяц</h4>
                 <div className="h-48 rounded-lg bg-gradient-to-br from-purple-50 to-blue-50 p-4">
                   <div className="flex h-full items-end justify-between gap-2">
                     {[65, 85, 45, 70, 90, 55, 75, 60, 80, 70, 65, 90, 100, 75, 60, 85, 70, 55, 65, 80, 75, 60, 70, 85, 90, 75, 65, 80, 70, 60].map((height, index) => (
@@ -343,16 +345,16 @@ export function AnalyticsPage() {
             </Card>
 
             {/* Прогноз на следующий месяц */}
-            <Card className="mb-4 border-2 border-blue-200">
+            <Card className="mb-4 border-2 border-blue-500/50 bg-slate-800/70 backdrop-blur-sm shadow-lg">
               <CardContent className="p-6">
-                <h4 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
-                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                <h4 className="mb-3 flex items-center gap-2 font-semibold text-white">
+                  <TrendingUp className="h-5 w-5 text-blue-400" />
                   Прогноз на следующий месяц
                 </h4>
                 <div className="space-y-3">
                   <div>
                     <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="text-gray-700">Ожидаемые расходы</span>
+                      <span className="text-gray-300">Ожидаемые расходы</span>
                       <span className="font-semibold text-red-600">
                         {formatCurrency((expenses * 1.05), 'RUB')}
                       </span>
@@ -361,7 +363,7 @@ export function AnalyticsPage() {
                   </div>
                   <div>
                     <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="text-gray-700">Ожидаемые доходы</span>
+                      <span className="text-gray-300">Ожидаемые доходы</span>
                       <span className="font-semibold text-green-600">
                         {formatCurrency((income * 1.02), 'RUB')}
                       </span>
@@ -378,9 +380,9 @@ export function AnalyticsPage() {
             </Card>
 
             {/* Распределение по часам */}
-            <Card>
+            <Card className="bg-slate-800/70 backdrop-blur-sm border-slate-700/50 shadow-lg">
               <CardContent className="p-6">
-                <h4 className="mb-4 font-semibold text-gray-900">Активность по времени суток</h4>
+                <h4 className="mb-4 font-semibold text-white">Активность по времени суток</h4>
                 <div className="space-y-2">
                   {[
                     { time: '🌅 Утро (6-12)', percent: 25, color: 'bg-yellow-500' },
@@ -402,31 +404,153 @@ export function AnalyticsPage() {
           </motion.div>
         )}
 
-        {/* Умные советы */}
-        {expenseChange > 10 && (
+        {/* Расширенные выводы и советы */}
+        {insights && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: isPremium ? 0.6 : 0.5 }}
+            className="space-y-4"
           >
-            <Card className="bg-gradient-to-r from-purple-50 to-blue-50">
-              <CardContent className="p-4 flex items-start gap-3">
-                <Lightbulb className="h-6 w-6 text-purple-600 flex-shrink-0" />
-                <div>
-                  <h3 className="mb-1 font-semibold text-gray-900">Умные советы</h3>
-                  <p className="text-sm text-gray-700">
-                    Ваши расходы составляют {((expenses / income) * 100).toFixed(0)}% от доходов. 
-                    Рекомендуем откладывать минимум 20% дохода на сбережения.
-                  </p>
-                  {topCategories[0] && (
-                    <p className="mt-2 text-sm text-gray-700">
-                      Категория "{topCategories[0].categoryName}" занимает {topCategories[0].percentage}% расходов. 
-                      Возможно, стоит пересмотреть траты в этой области.
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Метрики */}
+            {insights.metrics && (
+              <Card className="bg-gradient-to-br from-slate-800/90 to-slate-700/90 backdrop-blur-sm border-slate-600/50 shadow-lg">
+                <CardContent className="p-4">
+                  <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
+                    <Activity className="h-5 w-5 text-blue-400" />
+                    Ключевые метрики
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-slate-700/80 backdrop-blur-sm p-3 shadow-md">
+                      <p className="text-xs text-gray-400">Норма сбережений</p>
+                      <p className={`text-xl font-bold ${insights.metrics.savingsRate >= 20 ? 'text-green-400' : insights.metrics.savingsRate < 0 ? 'text-red-400' : 'text-orange-400'}`}>
+                        {insights.metrics.savingsRate.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-slate-700/80 backdrop-blur-sm p-3 shadow-md">
+                      <p className="text-xs text-gray-400">Средний расход/день</p>
+                      <p className="text-xl font-bold text-white">
+                        {formatCurrency(insights.metrics.avgDailyExpense, 'RUB')}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-slate-700/80 backdrop-blur-sm p-3 shadow-md">
+                      <p className="text-xs text-gray-400">Средний доход/день</p>
+                      <p className="text-xl font-bold text-green-400">
+                        {formatCurrency(insights.metrics.avgDailyIncome, 'RUB')}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-slate-700/80 backdrop-blur-sm p-3 shadow-md">
+                      <p className="text-xs text-gray-400">Соотношение расход/доход</p>
+                      <p className="text-xl font-bold text-white">
+                        {insights.metrics.expenseToIncomeRatio.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Предупреждения */}
+            {insights.warnings && insights.warnings.length > 0 && (
+              <div className="space-y-2">
+                {insights.warnings.map((warning: any, index: number) => (
+                  <Card key={index} className={`border-2 backdrop-blur-sm shadow-lg ${warning.type === 'critical' ? 'border-red-500/80 bg-red-900/30' : 'border-orange-500/80 bg-orange-900/30'}`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`rounded-full p-2 ${warning.type === 'critical' ? 'bg-red-200' : 'bg-orange-200'}`}>
+                          <Target className={`h-5 w-5 ${warning.type === 'critical' ? 'text-red-600' : 'text-orange-600'}`} />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="mb-1 font-semibold text-white">{warning.title}</h4>
+                          <p className="mb-2 text-sm text-gray-300">{warning.message}</p>
+                          {warning.action && (
+                            <Button variant="outline" size="sm" className="text-xs">
+                              {warning.action}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Положительные выводы */}
+            {insights.insights && insights.insights.length > 0 && (
+              <div className="space-y-2">
+                {insights.insights.map((insight: any, index: number) => (
+                  <Card key={index} className="border-2 border-green-500/80 bg-green-900/30 backdrop-blur-sm shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-full bg-green-200 p-2">
+                          <span className="text-xl">{insight.icon || '✅'}</span>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="mb-1 font-semibold text-white">{insight.title}</h4>
+                          <p className="text-sm text-gray-300">{insight.message}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Рекомендации */}
+            {insights.recommendations && insights.recommendations.length > 0 && (
+              <Card className="bg-gradient-to-r from-slate-800/90 to-slate-700/90 backdrop-blur-sm border-slate-600/50 shadow-lg">
+                <CardContent className="p-4">
+                  <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
+                    <Lightbulb className="h-5 w-5 text-purple-400" />
+                    Рекомендации
+                  </h3>
+                  <div className="space-y-2">
+                    {insights.recommendations.map((rec: any, index: number) => (
+                      <div key={index} className="rounded-lg bg-slate-700/80 backdrop-blur-sm p-3 shadow-md">
+                        <h4 className="mb-1 font-medium text-white">{rec.title}</h4>
+                        <p className="text-sm text-gray-300">{rec.message}</p>
+                        {rec.action && (
+                          <Button variant="ghost" size="sm" className="mt-2 text-xs">
+                            {rec.action} →
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Цели */}
+            {insights.goals && insights.goals.length > 0 && (
+              <Card className="bg-slate-800/70 backdrop-blur-sm border-slate-700/50 shadow-lg">
+                <CardContent className="p-4">
+                  <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-white">
+                    <Target className="h-5 w-5 text-purple-400" />
+                    Цели
+                  </h3>
+                  <div className="space-y-3">
+                    {insights.goals.map((goal: any, index: number) => (
+                      <div key={index}>
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-sm font-medium text-white">{goal.title}</span>
+                          {goal.status === 'completed' && (
+                            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                              ✓ Выполнено
+                            </span>
+                          )}
+                        </div>
+                        {goal.progress !== undefined && (
+                          <Progress value={goal.progress} className="h-2" />
+                        )}
+                        <p className="mt-1 text-xs text-gray-400">{goal.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </motion.div>
         )}
       </main>

@@ -325,3 +325,340 @@ class BankClient:
                     })
                 return transactions
             raise
+
+    # ========== НОВЫЕ API ИЗ api_new.txt ==========
+
+    def create_payment_consent_vrp(
+        self,
+        user_id: int,
+        bank_id: int,
+        client_id: str,
+        debtor_account: str,
+        vrp_max_individual_amount: float,
+        vrp_daily_limit: float,
+        vrp_monthly_limit: float,
+        valid_until: str
+    ) -> Dict[str, Any]:
+        """Создать VRP согласие для подписок (Variable Recurring Payments)"""
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+
+        url = f"{bank_config['base_url']}/payment-consents/request"
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Requesting-Bank": bank_config["client_id"],
+            "Content-Type": "application/json"
+        }
+
+        body = {
+            "requesting_bank": bank_config["client_id"],
+            "client_id": client_id,
+            "consent_type": "vrp",
+            "debtor_account": debtor_account,
+            "vrp_max_individual_amount": vrp_max_individual_amount,
+            "vrp_daily_limit": vrp_daily_limit,
+            "vrp_monthly_limit": vrp_monthly_limit,
+            "valid_until": valid_until,
+            "reason": "Подписка на банковские услуги через Bank Aggregator"
+        }
+
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.post(url, headers=headers, json=body)
+                response.raise_for_status()
+
+                data = response.json()
+                consent_id = data.get("consent_id") or data.get("data", {}).get("consentId")
+
+                logger.info(f"✅ Создано VRP согласие {consent_id} для банка {bank_id}")
+                return {
+                    "consent_id": consent_id,
+                    "status": data.get("status", "approved")
+                }
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка создания VRP согласия: {e}")
+            if settings.DEBUG:
+                mock_consent = f"vrp_consent_{bank_id}_{user_id}_dev"
+                logger.warning(f"⚠️  Используем mock VRP consent для разработки")
+                return {"consent_id": mock_consent, "status": "approved"}
+            raise
+
+    def get_products(
+        self,
+        user_id: int,
+        bank_id: int,
+        product_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Получить каталог продуктов банка"""
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+
+        url = f"{bank_config['base_url']}/products"
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+
+        params = {}
+        if product_type:
+            params["product_type"] = product_type
+
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(url, headers=headers, params=params)
+                response.raise_for_status()
+
+                data = response.json()
+                
+                products = []
+                if isinstance(data, list):
+                    products = data
+                elif "data" in data:
+                    if isinstance(data["data"], list):
+                        products = data["data"]
+                    elif "product" in data["data"]:
+                        products = data["data"]["product"]
+
+                logger.info(f"✅ Получено {len(products)} продуктов из {bank_config['name']}")
+                return products
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения продуктов: {e}")
+            if settings.DEBUG:
+                logger.warning(f"⚠️  Используем mock продукты для разработки")
+                return [
+                    {
+                        "productId": f"prod-{bank_config['name']}-card-001",
+                        "productType": "card",
+                        "productName": "Дебетовая карта",
+                        "description": "Карта с кешбеком 2%",
+                        "interestRate": None,
+                        "minAmount": 0,
+                        "maxAmount": None
+                    },
+                    {
+                        "productId": f"prod-{bank_config['name']}-deposit-001",
+                        "productType": "deposit",
+                        "productName": "Вклад Надежный",
+                        "description": "Вклад под 8.5% годовых",
+                        "interestRate": 8.5,
+                        "minAmount": 10000,
+                        "maxAmount": None
+                    }
+                ]
+            raise
+
+    def get_product_details(
+        self,
+        user_id: int,
+        bank_id: int,
+        product_id: str
+    ) -> Dict[str, Any]:
+        """Получить детали продукта"""
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+
+        url = f"{bank_config['base_url']}/products/{product_id}"
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.get(url, headers=headers)
+                response.raise_for_status()
+
+                data = response.json()
+                return data if isinstance(data, dict) else {"data": data}
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка получения деталей продукта: {e}")
+            if settings.DEBUG:
+                return {
+                    "productId": product_id,
+                    "productType": "card",
+                    "productName": "Дебетовая карта",
+                    "description": "Mock продукт"
+                }
+            raise
+
+    def create_product_agreement_consent(
+        self,
+        user_id: int,
+        bank_id: int,
+        client_id: str,
+        read_product_agreements: bool = True,
+        open_product_agreements: bool = True,
+        close_product_agreements: bool = False,
+        allowed_product_types: List[str] = None,
+        max_amount: float = None,
+        valid_until: str = None
+    ) -> Dict[str, Any]:
+        """Создать согласие на управление договорами с продуктами"""
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+
+        url = f"{bank_config['base_url']}/product-agreement-consents/request"
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+
+        body = {
+            "requesting_bank": bank_config["client_id"],
+            "client_id": client_id,
+            "read_product_agreements": read_product_agreements,
+            "open_product_agreements": open_product_agreements,
+            "close_product_agreements": close_product_agreements,
+            "reason": "Оформление подписок на банковские услуги"
+        }
+
+        if allowed_product_types:
+            body["allowed_product_types"] = allowed_product_types
+        if max_amount:
+            body["max_amount"] = max_amount
+        if valid_until:
+            body["valid_until"] = valid_until
+
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.post(url, headers=headers, json=body)
+                response.raise_for_status()
+
+                data = response.json()
+                consent_id = data.get("consent_id") or data.get("data", {}).get("consentId")
+
+                logger.info(f"✅ Создано согласие на управление договорами {consent_id}")
+                return {
+                    "consent_id": consent_id,
+                    "status": data.get("status", "approved")
+                }
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка создания согласия на управление договорами: {e}")
+            if settings.DEBUG:
+                mock_consent = f"product_consent_{bank_id}_{user_id}_dev"
+                logger.warning(f"⚠️  Используем mock consent для разработки")
+                return {"consent_id": mock_consent, "status": "approved"}
+            raise
+
+    def create_product_agreement(
+        self,
+        user_id: int,
+        bank_id: int,
+        client_id: str,
+        product_id: str,
+        amount: float,
+        term_months: Optional[int] = None,
+        source_account_id: Optional[str] = None,
+        product_agreement_consent_id: str = None
+    ) -> Dict[str, Any]:
+        """Открыть договор с продуктом (депозит, кредит, карта)"""
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+
+        url = f"{bank_config['base_url']}/product-agreements"
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+
+        if product_agreement_consent_id:
+            headers["X-Product-Agreement-Consent-Id"] = product_agreement_consent_id
+        headers["X-Requesting-Bank"] = bank_config["client_id"]
+
+        body = {
+            "product_id": product_id,
+            "amount": amount
+        }
+
+        if term_months:
+            body["term_months"] = term_months
+        if source_account_id:
+            body["source_account_id"] = source_account_id
+
+        params = {"client_id": client_id}
+
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.post(url, headers=headers, json=body, params=params)
+                response.raise_for_status()
+
+                data = response.json()
+                agreement_id = data.get("agreement_id") or data.get("data", {}).get("agreementId")
+
+                logger.info(f"✅ Создан договор с продуктом {agreement_id}")
+                return {
+                    "agreement_id": agreement_id,
+                    "status": data.get("status", "active")
+                }
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка создания договора с продуктом: {e}")
+            if settings.DEBUG:
+                mock_agreement = f"agreement_{bank_id}_{user_id}_{product_id}_dev"
+                logger.warning(f"⚠️  Используем mock agreement для разработки")
+                return {"agreement_id": mock_agreement, "status": "active"}
+            raise
+
+    def create_card(
+        self,
+        user_id: int,
+        bank_id: int,
+        client_id: str,
+        account_number: str,
+        card_name: str = "Visa Classic",
+        card_type: str = "debit",
+        consent_id: str = None
+    ) -> Dict[str, Any]:
+        """Выпустить новую карту и привязать к счету"""
+        bank_config = self._get_bank_config(bank_id)
+        token = self.get_bank_token(user_id, bank_id)
+
+        url = f"{bank_config['base_url']}/cards"
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+
+        if consent_id:
+            headers["X-Consent-Id"] = consent_id
+        headers["X-Requesting-Bank"] = bank_config["client_id"]
+
+        body = {
+            "account_number": account_number,
+            "card_name": card_name,
+            "card_type": card_type
+        }
+
+        params = {"client_id": client_id}
+
+        try:
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.post(url, headers=headers, json=body, params=params)
+                response.raise_for_status()
+
+                data = response.json()
+                card_id = data.get("card_id") or data.get("data", {}).get("cardId")
+
+                logger.info(f"✅ Выпущена карта {card_id}")
+                return {
+                    "card_id": card_id,
+                    "status": data.get("status", "active")
+                }
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка выпуска карты: {e}")
+            if settings.DEBUG:
+                mock_card = f"card_{bank_id}_{user_id}_dev"
+                logger.warning(f"⚠️  Используем mock карту для разработки")
+                return {"card_id": mock_card, "status": "active"}
+            raise

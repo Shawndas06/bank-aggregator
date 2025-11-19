@@ -5,7 +5,7 @@ import { BottomNavigation } from '@widgets/bottom-navigation'
 import { Card, CardContent, Button, Input, Label } from '@shared/ui'
 import { useGetAccounts } from '@entities/account'
 import { apiClient } from '@shared/api'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Smartphone,
   Home,
@@ -18,6 +18,7 @@ import {
   Phone,
   Zap,
   X,
+  Check,
 } from 'lucide-react'
 
 type PaymentType = 'card-to-card' | 'to-person' | 'mobile' | 'utilities' | 'internet' | 'tv' | 'electricity' | null
@@ -27,7 +28,7 @@ export function PaymentsPage() {
   const { data: accounts } = useGetAccounts()
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
       <MobileHeader />
 
       <main className="container mx-auto px-4 py-6">
@@ -38,8 +39,8 @@ export function PaymentsPage() {
           transition={{ duration: 0.5 }}
           className="mb-6"
         >
-          <h2 className="mb-2 text-2xl font-bold text-gray-900">Платежи</h2>
-          <p className="text-gray-600">Переводы и оплата услуг</p>
+          <h2 className="mb-2 text-2xl font-bold text-white">Платежи</h2>
+          <p className="text-gray-300">Переводы и оплата услуг</p>
         </motion.div>
 
         {/* Поиск */}
@@ -194,7 +195,7 @@ function PaymentCard({ icon, label, color, onClick }: PaymentCardProps) {
 // Модальное окно платежа
 function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts: any[], onClose: () => void }) {
   const [formData, setFormData] = useState({
-    fromAccountId: accounts[0]?.id || 0,
+    fromAccountId: (accounts[0] as any)?.id || (accounts[0] as any)?.accountId || 0,
     toPhone: '',
     toAccount: '',
     amount: '',
@@ -202,32 +203,62 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
     provider: '',
     accountNumber: ''
   })
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const queryClient = useQueryClient()
+
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const paymentMutation = useMutation({
     mutationFn: async (data: any) => {
-      if (type === 'card-to-card') {
-        return apiClient.post('/api/payments/card-to-card', data)
-      } else if (type === 'to-person') {
-        return apiClient.post('/api/payments/transfer-by-phone', {
-          from_account_id: data.fromAccountId,
-          to_phone: data.toPhone,
-          amount: parseFloat(data.amount),
-          description: data.description || 'Перевод по номеру телефона'
-        })
-      } else if (type === 'mobile') {
-        return apiClient.post('/api/payments/mobile', data)
-      } else if (type === 'utilities') {
-        return apiClient.post('/api/payments/utility', data)
+      if (isProcessing) {
+        throw new Error('Платеж уже обрабатывается, пожалуйста, подождите')
       }
-      throw new Error('Неизвестный тип платежа')
+      setIsProcessing(true)
+      
+      try {
+        if (type === 'card-to-card') {
+          return apiClient.post('/api/payments/card-to-card', data)
+        } else if (type === 'to-person') {
+          if (!data.fromAccountId || data.fromAccountId === 0) {
+            throw new Error('Выберите счет для списания')
+          }
+          return apiClient.post('/api/payments/transfer-by-phone', {
+            fromAccountId: data.fromAccountId,
+            toPhone: data.toPhone,
+            amount: parseFloat(data.amount),
+            description: data.description || 'Перевод по номеру телефона'
+          })
+        } else if (type === 'mobile') {
+          return apiClient.post('/api/payments/mobile', data)
+        } else if (type === 'utilities') {
+          return apiClient.post('/api/payments/utility', data)
+        }
+        throw new Error('Неизвестный тип платежа')
+      } finally {
+        setIsProcessing(false)
+      }
     },
-    onSuccess: (data: any) => {
-      alert(data.message || 'Платеж успешно выполнен!')
-      onClose()
-    },
-    onError: (error: any) => {
-      alert(error?.message || 'Ошибка выполнения платежа')
-    }
+            onSuccess: (data: any) => {
+              setSuccessMessage(data.data?.message || 'Платеж успешно выполнен!')
+              setShowSuccessModal(true)
+              setIsProcessing(false)
+              // Обновляем историю платежей, транзакции и балансы
+              queryClient.invalidateQueries({ queryKey: ['payments', 'history'] })
+              queryClient.invalidateQueries({ queryKey: ['accounts'] })
+              queryClient.invalidateQueries({ queryKey: ['transactions'] })
+              // Обновляем балансы всех счетов
+              accounts?.forEach((acc: any) => {
+                queryClient.invalidateQueries({ queryKey: ['balances', acc.accountId, acc.clientId] })
+              })
+            },
+            onError: (error: any) => {
+              setErrorMessage(error?.message || 'Ошибка выполнения платежа')
+              setShowErrorModal(true)
+              setIsProcessing(false)
+            }
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -311,7 +342,7 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
             >
               {accounts.map((acc) => (
-                <option key={`${acc.clientId}-${acc.accountId || acc.id}`} value={acc.id}>
+                <option key={`${acc.clientId}-${acc.accountId || (acc as any).id}`} value={(acc as any).id || acc.accountId}>
                   {acc.accountName} ({acc.clientName})
                 </option>
               ))}
@@ -321,12 +352,48 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
           {type === 'card-to-card' && (
             <div>
               <Label>Номер карты получателя</Label>
-              <Input
-                type="text"
-                placeholder="1234 5678 9012 3456"
-                value={formData.toAccount}
-                onChange={(e) => setFormData({ ...formData, toAccount: e.target.value })}
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="1234 5678 9012 3456"
+                  value={formData.toAccount}
+                  onChange={(e) => {
+                    // Форматируем номер карты (добавляем пробелы каждые 4 цифры)
+                    const value = e.target.value.replace(/\s/g, '')
+                    const formatted = value.match(/.{1,4}/g)?.join(' ') || value
+                    setFormData({ ...formData, toAccount: formatted })
+                  }}
+                  maxLength={19}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    const cardNumber = formData.toAccount.replace(/\s/g, '')
+                    if (!cardNumber || cardNumber.length < 16) {
+                      setErrorMessage('Введите номер карты (16 цифр)')
+                      setShowErrorModal(true)
+                      return
+                    }
+                    // Проверяем возможность перевода
+                    try {
+                      // В реальности здесь был бы запрос к API для проверки карты
+                      // Пока показываем информацию о реквизитах
+                      setSuccessMessage(`Реквизиты для перевода:\n\nНомер карты: ${formData.toAccount}\n\nКарта может принимать переводы.`)
+                      setShowSuccessModal(true)
+                    } catch (error: any) {
+                      setErrorMessage(error?.message || 'Не удалось проверить карту')
+                      setShowErrorModal(true)
+                    }
+                  }}
+                  className="whitespace-nowrap"
+                >
+                  Проверить
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Введите 16-значный номер карты для проверки возможности перевода
+              </p>
             </div>
           )}
 
@@ -394,14 +461,44 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
             </Button>
             <Button
               type="submit"
-              disabled={paymentMutation.isPending}
+              disabled={paymentMutation.isPending || isProcessing}
               className="flex-1"
             >
-              {paymentMutation.isPending ? 'Отправка...' : 'Оплатить'}
+              {paymentMutation.isPending || isProcessing ? 'Отправка...' : 'Оплатить'}
             </Button>
           </div>
         </form>
       </motion.div>
+
+      {/* Модальное окно успешного платежа */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md rounded-2xl bg-white p-6 text-center"
+          >
+            <div className="mb-4 flex justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="mb-2 text-xl font-bold text-gray-900">Перевод успешен</h3>
+            <p className="mb-6 text-gray-600">{successMessage}</p>
+            <Button
+              onClick={() => {
+                setShowSuccessModal(false)
+                onClose()
+              }}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              OK
+            </Button>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

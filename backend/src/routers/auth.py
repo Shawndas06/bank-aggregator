@@ -39,7 +39,8 @@ async def sign_up(
         request.password,
         request.name,
         request.phone,
-        request.birth_date
+        request.birth_date,
+        request.referral_code
     )
 
     if error:
@@ -54,6 +55,29 @@ async def sign_up(
         "phone": user.phone,
         "otpCode": otp_code  # Всегда возвращаем для разработки
     }, 201)
+
+@router.post("/send-otp")
+async def send_otp(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """Отправить код подтверждения на email"""
+    email = request.get('email')
+    if not email:
+        return error_response("Email не указан", 400)
+    
+    try:
+        otp_code = OTPService.generate_otp_code(db, email)
+        OTPService.send_otp_email(email, otp_code)
+        
+        return success_response({
+            "message": f"Код отправлен на {email}",
+            "email": email,
+            "otpCode": otp_code  # Для разработки
+        })
+    except Exception as e:
+        logger.error(f"Ошибка отправки OTP: {e}")
+        return error_response("Ошибка отправки кода", 500)
 
 @router.post("/verify-email")
 async def verify_email(
@@ -78,8 +102,10 @@ async def verify_email(
         "user": {
             "id": user.id,
             "name": user.name,
+            "email": user.email,
             "birthDate": str(user.birth_date),
-            "accountType": user.account_type.value
+            "accountType": user.account_type.value,
+            "isVerified": user.is_verified
         }
     })
 

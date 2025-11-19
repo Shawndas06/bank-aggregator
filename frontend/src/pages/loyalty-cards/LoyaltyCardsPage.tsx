@@ -74,10 +74,10 @@ export function LoyaltyCardsPage() {
     })
   }
 
-  const loyaltyCards = Array.isArray(cardsData) ? cardsData : (cardsData as any)?.data || []
+  const loyaltyCards = cardsData?.cards || []
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
       <MobileHeader />
 
       <main className="container mx-auto px-4 py-6">

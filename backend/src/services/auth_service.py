@@ -18,7 +18,8 @@ class AuthService:
         password: str,
         name: str,
         phone: str,
-        birth_date: date
+        birth_date: date,
+        referral_code: Optional[str] = None
     ) -> Tuple[Optional[User], Optional[str]]:
         existing_user = db.query(User).filter(User.email == email).first()
         if existing_user:
@@ -51,6 +52,16 @@ class AuthService:
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
+
+        # Обработка реферального кода (если указан)
+        if referral_code:
+            try:
+                from src.services.referral_service import ReferralService
+                ReferralService.register_referral(db, referral_code, new_user.id)
+                logger.info(f"Зарегистрирован реферал {new_user.id} по коду {referral_code}")
+            except Exception as e:
+                logger.warning(f"Ошибка регистрации реферала: {e}")
+                # Не блокируем регистрацию, если реферальный код неверный
 
         logger.info(f"Создан новый пользователь: {email}, телефон: {phone}")
         return new_user, None

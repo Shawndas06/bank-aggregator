@@ -11,6 +11,7 @@ class SignUpRequest(BaseModel):
     name: str
     phone: str
     birth_date: date = Field(..., alias='birthDate')
+    referral_code: Optional[str] = Field(None, alias='referralCode')  # Опциональный реферальный код
 
 class VerifyEmailRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)

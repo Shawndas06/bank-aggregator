@@ -87,7 +87,7 @@ export function AccountList() {
   const handleConnectBank = (bankId: number) => {
     setSelectedBankId(bankId)
     createAccount(
-      { clientId: bankId },
+      { client_id: bankId },
       {
         onSuccess: () => {
           setSelectedBankId(null)

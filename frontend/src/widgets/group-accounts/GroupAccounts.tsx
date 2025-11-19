@@ -96,7 +96,7 @@ export function GroupAccounts({ groupId }: GroupAccountsProps) {
                     <div>
                       <p className="font-medium text-gray-900">{account.accountName}</p>
                       <p className="text-xs text-gray-500">
-                        {BANK_NAMES[parseInt(account.clientId, 10) as keyof typeof BANK_NAMES] ||
+                        {BANK_NAMES[account.clientId as keyof typeof BANK_NAMES] ||
                           account.clientName}{' '}
                         • {account.owner.name}
                       </p>

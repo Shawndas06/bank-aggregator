@@ -1,9 +1,12 @@
 export type Account = {
+  id?: number
   accountId: string
   clientId: number
   clientName: string
   accountName: string
   isActive: boolean
+  isHidden?: boolean
+  priority?: number
 }
 
 export type GroupAccount = {

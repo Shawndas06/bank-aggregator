@@ -63,3 +63,26 @@ async def get_available_categories():
     
     return success_response(categories)
 
+@router.get("/insights")
+async def get_advanced_insights(
+    client_ids: Optional[str] = Query(None, description="ID банков через запятую"),
+    current_user: User = Depends(get_current_verified_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Расширенная аналитика с выводами, советами и рекомендациями
+    """
+    redis_client = get_redis()
+    service = AnalyticsService(db, redis_client)
+    
+    bank_ids = None
+    if client_ids:
+        try:
+            bank_ids = [int(x.strip()) for x in client_ids.split(',')]
+        except ValueError:
+            return error_response("Неверный формат client_ids", 400)
+    
+    insights = service.get_advanced_insights(current_user.id, bank_ids)
+    
+    return success_response(insights)
+
