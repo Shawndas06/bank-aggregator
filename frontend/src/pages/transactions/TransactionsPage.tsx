@@ -28,7 +28,7 @@ export function TransactionsPage() {
 
   if (accountsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+      <div className="min-h-screen bg-gray-50 pb-20">
         <MobileHeader />
         <div className="space-y-3 p-4">
           <Skeleton className="h-20" />
@@ -42,7 +42,7 @@ export function TransactionsPage() {
 
   if (!accounts?.length) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+      <div className="min-h-screen bg-gray-50 pb-20">
         <MobileHeader />
         <main className="container mx-auto px-4 py-6">
           <Card>
@@ -168,7 +168,7 @@ function TransactionsContent({ accounts, navigate }: { accounts: Account[], navi
 
   if (!allTransactions.length) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+      <div className="min-h-screen bg-gray-50 pb-20">
         <MobileHeader />
         <main className="container mx-auto px-4 py-6">
           <button

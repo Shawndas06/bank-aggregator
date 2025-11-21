@@ -130,7 +130,7 @@ export function PremiumPage() {
 
   if (isPremium) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+      <div className="min-h-screen bg-gray-50 pb-20">
         <MobileHeader />
         <main className="container mx-auto px-4 py-6">
           <button
@@ -155,7 +155,7 @@ export function PremiumPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-blue-50 pb-20">
       <MobileHeader />
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl">

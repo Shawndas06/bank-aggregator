@@ -76,7 +76,7 @@ export function ReferralsPage() {
     : ''
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <MobileHeader title="Реферальная программа" />
       
       <div className="px-4 pt-4 space-y-4">

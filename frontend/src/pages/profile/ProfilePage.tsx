@@ -54,7 +54,7 @@ export function ProfilePage() {
   const isPhoneVerified = !!user?.phone
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 pb-20">
       <MobileHeader />
 
       <main className="container mx-auto px-4 py-6 space-y-4">
@@ -64,8 +64,8 @@ export function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="mb-2 text-2xl font-bold text-white">Профиль</h2>
-          <p className="text-gray-300">Управление вашим аккаунтом</p>
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">Профиль</h2>
+          <p className="text-gray-600">Управление вашим аккаунтом</p>
         </motion.div>
 
         {/* User Card */}

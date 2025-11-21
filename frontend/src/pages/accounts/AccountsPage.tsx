@@ -26,7 +26,7 @@ export function AccountsPage() {
   const queryClient = useQueryClient()
 
   return (
-    <div className="min-h-screen pb-20 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen pb-20" style={{ background: 'linear-gradient(135deg, #DBEAFE 0%, #FFFFFF 50%, #E0E7FF 100%)' }}>
       <MobileHeader />
 
       <main className="container mx-auto px-4 py-6">
@@ -35,10 +35,10 @@ export function AccountsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="mb-2 text-3xl font-bold text-white">
+          <h2 className="mb-2 text-3xl font-bold" style={{ background: 'linear-gradient(90deg, #3B82F6 0%, #6366F1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Счета
           </h2>
-          <p className="text-gray-300 text-base font-medium">Управление банковскими счетами</p>
+          <p className="text-gray-700 text-base font-medium">Управление банковскими счетами</p>
         </motion.div>
 
         {/* Быстрые действия */}

@@ -28,7 +28,7 @@ export function PaymentsPage() {
   const { data: accounts } = useGetAccounts()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <MobileHeader />
 
       <main className="container mx-auto px-4 py-6">
@@ -39,8 +39,8 @@ export function PaymentsPage() {
           transition={{ duration: 0.5 }}
           className="mb-6"
         >
-          <h2 className="mb-2 text-2xl font-bold text-white">Платежи</h2>
-          <p className="text-gray-300">Переводы и оплата услуг</p>
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">Платежи</h2>
+          <p className="text-gray-600">Переводы и оплата услуг</p>
         </motion.div>
 
         {/* Поиск */}
