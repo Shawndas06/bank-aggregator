@@ -271,6 +271,6 @@ alembic upgrade head
 
 ## Проверки Pull Request
 
-Каждый push и PR запускает отдельные проверки CI: конфликты, TypeScript, ESLint, сборка, Python, расчёты, доступ, PostgreSQL/Redis/API, зависимости и Docker. Итоговый `required` требует успеха всех заданий.
+Каждый push и PR запускает отдельные проверки CI: конфликты, TypeScript, ESLint, сборка, Python, расчёты, доступ, frontend-тесты, Chromium/PWA, PostgreSQL/Redis/API, зависимости и Docker. Итоговый `required` требует успеха всех заданий.
 
 Команды, ограничения покрытия и порядок работы с планом: [docs/ci.md](docs/ci.md). Основной менеджер frontend-зависимостей — npm; обновления фиксируются в `package-lock.json`.

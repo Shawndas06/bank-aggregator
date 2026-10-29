@@ -1,37 +1,36 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { LogoutButton } from '@features/auth/logout'
-import { useGetMe } from '@entities/user'
 import { useGetAccounts } from '@entities/account'
 import { useGetAnalyticsOverview } from '@entities/analytics'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useGetMe } from '@entities/user'
+import { LogoutButton } from '@features/auth/logout'
 import { apiClient } from '@shared/api'
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  Shield, 
-  Bell, 
-  Lock, 
-  CreditCard,
-  ChevronRight,
-  Crown,
-  Settings,
-  HelpCircle,
+import { formatCurrency } from '@shared/lib/utils'
+import { Button, Card, CardContent, Input, Label } from '@shared/ui'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { motion } from 'framer-motion'
+import {
+  Award,
+  Bell,
+  Calendar,
   Check,
-  X,
+  ChevronRight,
+  CreditCard,
+  Crown,
   FileText,
   Gift,
-  TrendingUp,
-  Wallet,
+  HelpCircle,
+  Lock,
+  Mail,
+  Phone,
+  Settings,
+  Shield,
   Star,
-  Award
+  User,
+  Wallet,
+  X,
 } from 'lucide-react'
-import { Card, CardContent, Button, Input, Label } from '@shared/ui'
-import { formatCurrency } from '@shared/lib/utils'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export function ProfilePage() {
@@ -39,7 +38,6 @@ export function ProfilePage() {
   const { data: accounts } = useGetAccounts()
   const { data: analytics } = useGetAnalyticsOverview()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [showPhoneModal, setShowPhoneModal] = useState(false)
   const [showNotificationsModal, setShowNotificationsModal] = useState(false)
@@ -48,7 +46,7 @@ export function ProfilePage() {
   const [showHelpModal, setShowHelpModal] = useState(false)
 
   const accountsCount = accounts?.length || 0
-  const isPremium = user?.accountType === 'PREMIUM'
+  const isPremium = user?.accountType === 'premium'
   const totalBalance = analytics?.totalBalance || 0
   const isEmailVerified = user?.isVerified || false
   const isPhoneVerified = !!user?.phone
@@ -210,7 +208,7 @@ export function ProfilePage() {
             <Card>
               <CardContent className="p-4">
                 <div className="space-y-3">
-                  {accounts.slice(0, 3).map((acc: any) => (
+                  {accounts.slice(0, 3).map((acc) => (
                     <div 
                       key={`${acc.clientId}-${acc.accountId}`} 
                       className="flex items-center justify-between"
@@ -394,7 +392,6 @@ function EmailVerificationModal({ email, onClose, onSuccess }: { email: string, 
   const [inputEmail, setInputEmail] = useState(email)
   const [otpCode, setOtpCode] = useState('')
   const [step, setStep] = useState<'email' | 'code'>('email')
-  const [isLoading, setIsLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -407,7 +404,7 @@ function EmailVerificationModal({ email, onClose, onSuccess }: { email: string, 
     onSuccess: () => {
       setStep('code')
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setErrorMessage(error?.message || 'Не удалось отправить код')
       setShowErrorModal(true)
     }
@@ -426,7 +423,7 @@ function EmailVerificationModal({ email, onClose, onSuccess }: { email: string, 
         onSuccess()
       }, 1500)
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setErrorMessage(error?.message || 'Неверный код')
       setShowErrorModal(true)
     }
@@ -571,6 +568,8 @@ function PhoneVerificationModal({ phone, onClose, onSuccess }: { phone: string, 
   const [inputPhone, setInputPhone] = useState(phone)
   const [otpCode, setOtpCode] = useState('')
   const [step, setStep] = useState<'phone' | 'code'>('phone')
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const sendCodeMutation = useMutation({
     mutationFn: async (phone: string) => {
@@ -581,7 +580,7 @@ function PhoneVerificationModal({ phone, onClose, onSuccess }: { phone: string, 
       setStep('code')
       alert('📱 Код отправлен на ' + inputPhone)
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert('❌ Ошибка: ' + (error?.message || 'Не удалось отправить код'))
     }
   })
@@ -594,7 +593,7 @@ function PhoneVerificationModal({ phone, onClose, onSuccess }: { phone: string, 
       alert('✅ Номер телефона успешно подтвержден!')
       onSuccess()
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert('❌ Ошибка: ' + (error?.message || 'Неверный код'))
     }
   })
@@ -688,25 +687,6 @@ function PhoneVerificationModal({ phone, onClose, onSuccess }: { phone: string, 
       </motion.div>
 
       {/* Модальное окно успеха */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md rounded-2xl bg-white p-6 text-center"
-          >
-            <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <Check className="h-8 w-8 text-green-600" />
-              </div>
-            </div>
-            <h3 className="mb-2 text-xl font-bold text-gray-900">Телефон подтвержден</h3>
-            <p className="mb-6 text-gray-600">Ваш номер телефона успешно подтвержден!</p>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Модальное окно ошибки */}
       {showErrorModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
           <motion.div

@@ -22,6 +22,20 @@ for asset in assets:
     assert body and 'text/html' not in kind, (asset, kind)
 route, _ = get('/accounts')
 assert route == html, 'SPA fallback failed'
+manifest, kind = get('/manifest.webmanifest')
+assert 'json' in kind or 'manifest' in kind, kind
+manifest = json.loads(manifest)
+assert manifest['start_url'] == '/'
+for icon in manifest['icons']:
+    body, kind = get(icon['src'])
+    assert body and 'image/' in kind, (icon, kind)
+worker, kind = get('/sw.js')
+assert 'javascript' in kind and b"addEventListener('fetch'" in worker
+registration, kind = get('/registerSW.js')
+assert 'javascript' in kind and b"register('/sw.js')" in registration
+for path in ('/sw.js', '/registerSW.js', '/manifest.webmanifest'):
+    with urlopen('http://127.0.0.1:8080' + path, timeout=15) as response:
+        assert 'no-cache' in response.headers.get('Cache-Control', ''), path
 for service in ('backend', 'frontend'):
     subprocess.run([
         'docker', 'compose', '-f', 'compose.ci.yml', 'exec', '-T', service,

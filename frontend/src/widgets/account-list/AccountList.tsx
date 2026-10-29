@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useGetAccounts, useGetBalance, useCreateAccount } from '@entities/account'
 import type { Account } from '@entities/account'
+import { useCreateAccount, useGetAccounts, useGetBalance } from '@entities/account'
+import { AVAILABLE_BANKS, BANK_NAMES } from '@shared/config'
+import { formatCurrency } from '@shared/lib/utils'
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   LoadingSpinner,
-  Button,
   Skeleton,
 } from '@shared/ui'
-import { formatCurrency } from '@shared/lib/utils'
-import { BANK_NAMES, AVAILABLE_BANKS } from '@shared/config'
 import { Building2 } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 function AccountCardSkeleton() {
   return (
@@ -87,7 +87,7 @@ export function AccountList() {
   const handleConnectBank = (bankId: number) => {
     setSelectedBankId(bankId)
     createAccount(
-      { client_id: bankId },
+      { clientId: bankId },
       {
         onSuccess: () => {
           setSelectedBankId(null)

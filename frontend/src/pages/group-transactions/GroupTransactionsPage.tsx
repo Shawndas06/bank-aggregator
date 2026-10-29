@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { useQueries } from '@tanstack/react-query'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { useGetGroups, useGetGroupAccounts } from '@entities/group'
-import type { Transaction, GroupAccount } from '@entities/account'
-import { Card, CardContent, Button } from '@shared/ui'
-import { ArrowLeft, ArrowUpRight, ArrowDownRight, Clock, ChevronDown } from 'lucide-react'
-import { formatCurrency } from '@shared/lib/utils'
-import { format } from 'date-fns'
-import { ru } from 'date-fns/locale'
-import { BANK_NAMES } from '@shared/config'
+import type { GroupAccount, Transaction } from '@entities/account'
+import { useGetGroupAccounts, useGetGroups } from '@entities/group'
 import { apiClient, ENDPOINTS } from '@shared/api'
 import type { TransactionResponse } from '@shared/api/types'
+import { BANK_NAMES } from '@shared/config'
+import { formatCurrency } from '@shared/lib/utils'
+import { Button, Card, CardContent } from '@shared/ui'
+import { useQueries } from '@tanstack/react-query'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { format } from 'date-fns'
+import { ru } from 'date-fns/locale'
+import { motion } from 'framer-motion'
+import { ArrowDownRight, ArrowLeft, ArrowUpRight, ChevronDown, Clock } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 
 type TransactionWithAccount = Transaction & {
   accountId: string
@@ -56,6 +56,7 @@ export function GroupTransactionsPage() {
     .flatMap((query, index) =>
       (query.data || []).map((transaction: Transaction) => ({
         ...transaction,
+        accountId: accounts![index].accountId,
         account: accounts![index],
       }))
     )

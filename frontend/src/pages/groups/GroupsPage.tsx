@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { InvitationsList } from '@widgets/invitations-list'
-import { GroupList } from '@widgets/group-list'
-import { useGetGroups, useGetGroupSettings, useCreateGroup } from '@entities/group'
+import { useCreateGroup, useGetGroups, useGetGroupSettings } from '@entities/group'
 import { useGetMe } from '@entities/user'
-import { Button, Input, Card, CardContent, PremiumDialog } from '@shared/ui'
+import { Button, Card, CardContent, Input, PremiumDialog } from '@shared/ui'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { GroupList } from '@widgets/group-list'
+import { MobileHeader } from '@widgets/header'
+import { InvitationsList } from '@widgets/invitations-list'
+import { motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
+import { useState } from 'react'
 
 export function GroupsPage() {
   const { data: groups } = useGetGroups()
@@ -55,7 +55,7 @@ export function GroupsPage() {
           setGroupName('')
           setShowCreateForm(false)
         },
-        onError: (error: any) => {
+        onError: (error) => {
           alert(`❌ Ошибка создания группы\n\n${error?.message || 'Попробуйте позже'}`)
         }
       }

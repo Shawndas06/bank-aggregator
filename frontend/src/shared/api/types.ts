@@ -35,6 +35,10 @@ export type SignInRequest = {
 }
 
 export type UserResponse = {
+  email: string
+  phone: string | null
+  avatarUrl: string | null
+  isVerified: boolean
   id: number
   name: string
   birthDate: string
@@ -59,6 +63,9 @@ export type AccountAttachRequest = {
 }
 
 export type AccountResponse = {
+  id: number
+  isHidden: boolean
+  priority: number
   accountId: string
   clientId: number
   clientName: string
@@ -131,4 +138,37 @@ export type GroupSettingsResponse = {
     maxGroups: number
     maxMembers: number
   }
+}
+
+export type LoyaltyCardCreate = {
+  cardType: string
+  cardNumber: string
+  cardName?: string
+  barcodeType: string
+}
+
+export type LoyaltyCard = {
+  id: number
+  cardType: string
+  cardName: string
+  maskedNumber: string
+  barcodeType: string
+  createdAt: string
+}
+
+export type PaymentResponse = {
+  id: number
+  amount: number
+  currency: string
+  paymentType: string
+  status: string
+  isIncoming: boolean
+  fromAccountName?: string | null
+  fromUserId?: number | null
+  toName?: string | null
+  toPhone?: string | null
+  toAccount?: string | null
+  description?: string | null
+  createdAt: string
+  completedAt?: string | null
 }

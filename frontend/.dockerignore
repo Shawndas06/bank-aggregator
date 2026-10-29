@@ -58,3 +58,8 @@ PLAN.md
 AGENTS.md
 .codex
 .agents
+
+playwright-report
+test-results
+browser
+tests

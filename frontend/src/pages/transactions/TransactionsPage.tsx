@@ -1,26 +1,25 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
+import type { Account } from '@entities/account'
 import { useGetAccounts } from '@entities/account/api/accountApi'
-import { Card, CardContent, Skeleton, Button } from '@shared/ui'
+import {
+  bankTransaction,
+  paymentTransaction,
+  type TransactionWithAccount,
+} from '@entities/transaction/model/aggregate'
+import { apiClient, ENDPOINTS } from '@shared/api'
+import type { PaymentResponse, TransactionResponse } from '@shared/api/types'
+import { BANK_NAMES } from '@shared/config'
 import { formatCurrency } from '@shared/lib/utils'
-import { ArrowUpRight, ArrowDownRight, Clock, X, ArrowLeft } from 'lucide-react'
+import { Button, Card, CardContent, Skeleton } from '@shared/ui'
+import { useQueries, useQuery } from '@tanstack/react-query'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { BANK_NAMES } from '@shared/config'
-import { apiClient, ENDPOINTS } from '@shared/api'
-import type { TransactionResponse } from '@shared/api/types'
-import { useQueries, useQuery } from '@tanstack/react-query'
-import type { Transaction } from '@entities/transaction'
-import type { Account } from '@entities/account'
+import { motion } from 'framer-motion'
+import { ArrowDownRight, ArrowLeft, ArrowUpRight, Clock, X } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-type TransactionWithAccount = Transaction & {
-  accountId: string
-  account: Account
-  paymentDetails?: any
-}
 
 export function TransactionsPage() {
   const navigate = useNavigate()
@@ -63,7 +62,7 @@ export function TransactionsPage() {
   return <TransactionsContent accounts={accounts} navigate={navigate} />
 }
 
-function TransactionsContent({ accounts, navigate }: { accounts: Account[], navigate: (path: string) => void }) {
+function TransactionsContent({ accounts, navigate }: { accounts: Account[], navigate: import("react-router-dom").NavigateFunction }) {
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithAccount | null>(null)
 
   // Получаем транзакции из Bank API
@@ -98,7 +97,7 @@ function TransactionsContent({ accounts, navigate }: { accounts: Account[], navi
     queryKey: ['payments', 'history'],
     queryFn: async () => {
       try {
-        const response = await apiClient.get<any[]>('/api/payments/history?limit=200')
+        const response = await apiClient.get<PaymentResponse[]>('/api/payments/history?limit=200')
         return Array.isArray(response) ? response : []
       } catch (error) {
         console.error('Ошибка получения истории платежей:', error)
@@ -109,55 +108,12 @@ function TransactionsContent({ accounts, navigate }: { accounts: Account[], navi
   })
 
   // Объединяем транзакции из Bank API
-  const bankTransactions: TransactionWithAccount[] = transactionQueries
-    .flatMap((query, index) =>
-      (query.data || []).map((transaction: Transaction) => ({
-        ...transaction,
-        account: accounts[index],
-      }))
-    )
-
-  // Преобразуем внутренние платежи в формат транзакций
-  const internalTransactions: TransactionWithAccount[] = (paymentsData || [])
-    .filter((payment: any) => payment && payment.id)
-    .map((payment: any) => {
-      const isIncoming = payment.isIncoming || false
-      let account
-      if (isIncoming) {
-        account = accounts[0]
-      } else {
-        account = accounts.find(acc => acc.accountName === payment.fromAccountName) || accounts[0]
-      }
-      
-      if (!account) return null
-      
-      let description = payment.description
-      if (!description) {
-        if (payment.paymentType === 'TO_PERSON') {
-          if (isIncoming) {
-            description = `Перевод от ${payment.fromUserId ? 'пользователя' : payment.fromAccountName || ''}`
-          } else {
-            description = `Перевод ${payment.toName || payment.toPhone || ''}`
-          }
-        } else if (payment.paymentType === 'PREMIUM') {
-          description = 'Оплата Premium подписки'
-        } else {
-          description = 'Платеж'
-        }
-      }
-      
-      return {
-        id: `payment_${payment.id}`,
-        date: payment.completedAt || payment.createdAt,
-        description: description,
-        amount: isIncoming ? payment.amount : -payment.amount,
-        currency: payment.currency || 'RUB',
-        type: isIncoming ? 'credit' : 'debit',
-        account: account,
-        paymentDetails: payment,
-      }
-    })
-    .filter((tx: any) => tx !== null)
+  const bankTransactions = transactionQueries.flatMap((query, index) =>
+    (query.data || []).map(transaction => bankTransaction(transaction, accounts[index])))
+  const internalTransactions = (paymentsData || []).flatMap(payment => {
+    const transaction = paymentTransaction(payment, accounts)
+    return transaction ? [transaction] : []
+  })
 
   // Объединяем все транзакции и сортируем по дате
   const allTransactions: TransactionWithAccount[] = [

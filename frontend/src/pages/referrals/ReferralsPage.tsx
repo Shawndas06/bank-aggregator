@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { useGetMe } from '@entities/user'
-import { Button, Card, CardContent } from '@shared/ui'
 import { apiClient } from '@shared/api'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Copy, Gift, Users, TrendingUp, CheckCircle, XCircle } from 'lucide-react'
+import { asError } from '@shared/lib/errors'
+import { Button, Card, CardContent } from '@shared/ui'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { motion } from 'framer-motion'
+import { CheckCircle, Copy, Gift, Users, XCircle } from 'lucide-react'
+import { useState } from 'react'
 
 interface ReferralStats {
   referral_code: string
@@ -27,7 +27,6 @@ interface Referral {
 }
 
 export function ReferralsPage() {
-  const { data: user } = useGetMe()
   const queryClient = useQueryClient()
   const [copied, setCopied] = useState(false)
 
@@ -44,9 +43,9 @@ export function ReferralsPage() {
   const { data: referrals, isLoading: referralsLoading } = useQuery({
     queryKey: ['referrals', 'list'],
     queryFn: async () => {
-      const response = await apiClient.get('/api/referrals/list')
+      const response = await apiClient.get<{referrals: Referral[]}>('/api/referrals/list')
       // API возвращает { success: true, data: { referrals: [...] } }
-      return (response as any).referrals || []
+      return response.referrals || []
     },
   })
 
@@ -56,7 +55,7 @@ export function ReferralsPage() {
       alert('✅ Запрос на выплату успешно отправлен!')
       queryClient.invalidateQueries({ queryKey: ['referrals'] })
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(`❌ Ошибка: ${error?.message || 'Не удалось запросить выплату'}`)
     },
   })
@@ -140,7 +139,8 @@ export function ReferralsPage() {
                             }
                             // Обновляем данные
                             await refetchStats()
-                          } catch (error: any) {
+                          } catch (caught) {
+      const error = asError(caught)
                             alert('❌ Ошибка: ' + (error?.message || 'Не удалось сгенерировать код'))
                           }
                         }}

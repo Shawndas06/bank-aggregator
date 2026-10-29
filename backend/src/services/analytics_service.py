@@ -1,7 +1,8 @@
 import logging
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 import redis
 
 from src.services.account_service import AccountService
@@ -10,6 +11,13 @@ from src.constants.constants import TransactionCategory
 from src.models.payment import Payment, PaymentType, PaymentStatus
 
 logger = logging.getLogger(__name__)
+
+def _utc_naive(value):
+    """Bank offsets and naive UTC timestamps from our models share one reporting calendar."""
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return value.astimezone(timezone.utc).replace(tzinfo=None) if value.tzinfo else value
+
 
 class AnalyticsService:
     
@@ -31,7 +39,7 @@ class AnalyticsService:
         if bank_ids:
             accounts = [acc for acc in accounts if acc["clientId"] in bank_ids]
         
-        total_balance = 0.0
+        total_balance = Decimal("0")
         balances_by_currency = {}
         
         for account in accounts:
@@ -42,7 +50,7 @@ class AnalyticsService:
                     account["clientId"]
                 )
                 
-                amount = balance.get("amount", 0)
+                amount = Decimal(str(balance.get("amount", 0)))
                 currency = balance.get("currency", "RUB")
                 
                 total_balance += amount
@@ -55,13 +63,14 @@ class AnalyticsService:
                 logger.error(f"Ошибка получения баланса: {e}")
                 continue
         
-        current_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        current_month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        next_month_start = (current_month_start + timedelta(days=32)).replace(day=1)
         previous_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
         
-        current_expenses = 0.0
-        current_income = 0.0
-        previous_expenses = 0.0
-        previous_income = 0.0
+        current_expenses = Decimal("0")
+        current_income = Decimal("0")
+        previous_expenses = Decimal("0")
+        previous_income = Decimal("0")
         
         category_totals = {}
         
@@ -76,8 +85,8 @@ class AnalyticsService:
                 
                 for txn in transactions:
                     try:
-                        txn_date = datetime.fromisoformat(txn["date"].replace('Z', '+00:00'))
-                        amount = abs(txn["amount"])
+                        txn_date = _utc_naive(txn["date"])
+                        amount = abs(Decimal(str(txn["amount"])))
                         txn_type = txn.get("type", "debit")
                         
                         category = categorize_transaction(
@@ -85,7 +94,7 @@ class AnalyticsService:
                             txn.get("description", "")
                         )
                         
-                        if txn_date >= current_month_start:
+                        if current_month_start <= txn_date < next_month_start:
                             if txn_type == "debit":
                                 current_expenses += amount
                                 
@@ -127,13 +136,14 @@ class AnalyticsService:
                     if not payment_date:
                         payment_date = payment.created_at
                     
-                    amount = float(payment.amount)
+                    payment_date = _utc_naive(payment_date)
+                    amount = Decimal(str(payment.amount))
                     
                     # Определяем, это доход или расход
                     is_incoming = payment.to_user_id == user_id if payment.to_user_id else False
                     is_outgoing = payment.user_id == user_id
                     
-                    if payment_date >= current_month_start:
+                    if current_month_start <= payment_date < next_month_start:
                         if is_outgoing:
                             # Исходящий платеж - это расход
                             current_expenses += amount
@@ -180,8 +190,8 @@ class AnalyticsService:
                 {
                     "category": cat.value,
                     "categoryName": CATEGORY_NAMES_RU.get(cat, cat.value),
-                    "amount": amount,
-                    "percentage": round((amount / current_expenses * 100) if current_expenses > 0 else 0, 1)
+                    "amount": float(amount),
+                    "percentage": float(round((amount / current_expenses * 100) if current_expenses > 0 else 0, 1))
                 }
                 for cat, amount in category_totals.items()
             ],
@@ -198,13 +208,13 @@ class AnalyticsService:
             income_change = round(((current_income - previous_income) / previous_income) * 100, 1)
         
         return {
-            "totalBalance": total_balance,
-            "balanceByCurrency": balances_by_currency,
+            "totalBalance": float(total_balance),
+            "balanceByCurrency": {currency: float(amount) for currency, amount in balances_by_currency.items()},
             "currentMonth": {
-                "expenses": current_expenses,
-                "income": current_income,
-                "expenseChange": expense_change,
-                "incomeChange": income_change
+                "expenses": float(current_expenses),
+                "income": float(current_income),
+                "expenseChange": float(expense_change),
+                "incomeChange": float(income_change)
             },
             "topCategories": top_categories,
             "accountsCount": len(accounts)
@@ -234,15 +244,15 @@ class AnalyticsService:
                 
                 for txn in transactions:
                     try:
-                        txn_date = datetime.fromisoformat(txn["date"].replace('Z', '+00:00'))
+                        txn_date = _utc_naive(txn["date"])
                         
                         if start_date:
-                            start = datetime.fromisoformat(start_date)
+                            start = _utc_naive(start_date)
                             if txn_date < start:
                                 continue
                         
                         if end_date:
-                            end = datetime.fromisoformat(end_date)
+                            end = _utc_naive(end_date)
                             if txn_date > end:
                                 continue
                         
@@ -259,7 +269,7 @@ class AnalyticsService:
                                     "transactions": []
                                 }
                             
-                            category_data[category]["amount"] += abs(txn["amount"])
+                            category_data[category]["amount"] += abs(Decimal(str(txn["amount"])))
                             category_data[category]["count"] += 1
                             category_data[category]["transactions"].append({
                                 "id": txn["id"],
@@ -291,13 +301,14 @@ class AnalyticsService:
                     if not payment_date:
                         payment_date = payment.created_at
                     
+                    payment_date = _utc_naive(payment_date)
                     if start_date:
-                        start = datetime.fromisoformat(start_date)
+                        start = _utc_naive(start_date)
                         if payment_date < start:
                             continue
                     
                     if end_date:
-                        end = datetime.fromisoformat(end_date)
+                        end = _utc_naive(end_date)
                         if payment_date > end:
                             continue
                     
@@ -325,14 +336,15 @@ class AnalyticsService:
                             "transactions": []
                         }
                     
-                    amount = float(payment.amount)
+                    payment_date = _utc_naive(payment_date)
+                    amount = Decimal(str(payment.amount))
                     category_data[category]["amount"] += amount
                     category_data[category]["count"] += 1
                     category_data[category]["transactions"].append({
                         "id": f"payment_{payment.id}",
                         "date": payment_date.isoformat(),
                         "description": payment.description or f"Платеж {payment.payment_type.value}",
-                        "amount": amount
+                        "amount": float(amount)
                     })
                 
                 except Exception as e:
@@ -349,9 +361,9 @@ class AnalyticsService:
             result.append({
                 "category": category.value,
                 "categoryName": CATEGORY_NAMES_RU.get(category, category.value),
-                "amount": data["amount"],
+                "amount": float(data["amount"]),
                 "count": data["count"],
-                "percentage": round((data["amount"] / total_amount * 100) if total_amount > 0 else 0, 1),
+                "percentage": float(round((data["amount"] / total_amount * 100) if total_amount > 0 else 0, 1)),
                 "topTransactions": sorted(data["transactions"], key=lambda x: x["amount"], reverse=True)[:5]
             })
         
@@ -509,7 +521,7 @@ class AnalyticsService:
                 "avgDailyExpense": round(avg_daily_expense, 2),
                 "avgDailyIncome": round(avg_daily_income, 2),
                 "expenseToIncomeRatio": round((expenses / income * 100) if income > 0 else 0, 1),
-                "totalBalance": total_balance,
+                "totalBalance": float(total_balance),
                 "daysUntilPayday": 15  # Mock
             },
             "insights": insights,

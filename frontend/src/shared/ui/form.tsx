@@ -1,19 +1,11 @@
+import { FormFieldContext, useFormField } from './form-context'
 import * as React from 'react'
-import { useFormContext, Controller, FormProvider } from 'react-hook-form'
+import { Controller, FormProvider } from 'react-hook-form'
 import type { FieldPath, FieldValues } from 'react-hook-form'
 import { Label } from './label'
 import { cn } from '@shared/lib/utils'
 
 const Form = FormProvider
-
-type FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-> = {
-  name: TName
-}
-
-const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue)
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
@@ -26,22 +18,6 @@ const FormField = <
       <Controller {...props} />
     </FormFieldContext.Provider>
   )
-}
-
-const useFormField = () => {
-  const fieldContext = React.useContext(FormFieldContext)
-  const { getFieldState, formState } = useFormContext()
-
-  const fieldState = getFieldState(fieldContext.name, formState)
-
-  if (!fieldContext) {
-    throw new Error('useFormField should be used within <FormField>')
-  }
-
-  return {
-    name: fieldContext.name,
-    ...fieldState,
-  }
 }
 
 const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
@@ -112,7 +88,6 @@ const FormMessage = React.forwardRef<
 FormMessage.displayName = 'FormMessage'
 
 export {
-  useFormField,
   Form,
   FormItem,
   FormLabel,

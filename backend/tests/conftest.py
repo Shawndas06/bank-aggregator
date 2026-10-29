@@ -17,7 +17,7 @@ from src.models.user import User
 
 @pytest.fixture
 def db():
-    engine = create_engine('sqlite://', poolclass=StaticPool)
+    engine = create_engine('sqlite://', poolclass=StaticPool, connect_args={'check_same_thread': False})
     Base.metadata.create_all(engine)
     with Session(engine) as session:
         session.add_all([

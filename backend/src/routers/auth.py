@@ -164,6 +164,7 @@ async def get_me(current_user: User = Depends(get_current_verified_user)):
         "birthDate": str(current_user.birth_date),
         "phone": current_user.phone,
         "avatarUrl": current_user.avatar_url,
+        "isVerified": current_user.is_verified,
         "accountType": current_user.account_type.value
     })
 
@@ -215,6 +216,7 @@ async def update_profile(
             "birthDate": str(current_user.birth_date),
             "phone": current_user.phone,
             "avatarUrl": current_user.avatar_url,
+        "isVerified": current_user.is_verified,
             "accountType": current_user.account_type.value
         }
     })

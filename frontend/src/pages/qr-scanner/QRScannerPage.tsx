@@ -1,16 +1,18 @@
-import { useState, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { Card, CardContent, Button, Input, Label } from '@shared/ui'
-import { QrCode, Scan, ArrowLeft, X } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { Html5Qrcode } from 'html5-qrcode'
-import { QRCodeSVG } from 'qrcode.react'
+import type { Account } from '@entities/account'
 import { useGetAccounts } from '@entities/account'
 import { useGetMe } from '@entities/user'
 import { apiClient } from '@shared/api'
+import { asError } from '@shared/lib/errors'
+import { Button, Card, CardContent, Input, Label } from '@shared/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { motion } from 'framer-motion'
+import { Html5Qrcode } from 'html5-qrcode'
+import { ArrowLeft, QrCode, Scan, X } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export function QRScannerPage() {
   const navigate = useNavigate()
@@ -42,7 +44,7 @@ export function QRScannerPage() {
       try {
         await scannerRef.current.stop()
         await scannerRef.current.clear()
-      } catch (e) {
+      } catch {
         // Игнорируем ошибки при остановке
       }
       scannerRef.current = null
@@ -62,7 +64,7 @@ export function QRScannerPage() {
       scannerRef.current = html5QrCode
 
       // Пытаемся использовать заднюю камеру, если не получается - используем любую доступную
-      let cameraConfig: any = { facingMode: 'environment' }
+      let cameraConfig: MediaTrackConstraints = { facingMode: 'environment' }
       
       try {
         await html5QrCode.start(
@@ -82,7 +84,8 @@ export function QRScannerPage() {
           }
         )
         setIsScanning(true)
-      } catch (cameraError: any) {
+      } catch (caught) {
+      const cameraError = asError(caught)
         // Если не удалось использовать заднюю камеру, пробуем любую доступную
         if (cameraError.message && cameraError.message.includes('environment')) {
           console.log('Задняя камера недоступна, пробуем любую доступную')
@@ -108,7 +111,8 @@ export function QRScannerPage() {
           throw cameraError
         }
       }
-    } catch (error: any) {
+    } catch (caught) {
+      const error = asError(caught)
       console.error('Ошибка доступа к камере:', error)
       let errorMessage = 'Неизвестная ошибка'
       
@@ -145,7 +149,8 @@ export function QRScannerPage() {
             console.log('Ошибка очистки сканера (можно игнорировать):', clearError)
           }
         }, 100)
-      } catch (error: any) {
+      } catch (caught) {
+      const error = asError(caught)
         // Игнорируем ошибки при остановке (элемент может быть уже удален React)
         console.log('Ошибка остановки сканера (можно игнорировать):', error)
       }
@@ -158,7 +163,7 @@ export function QRScannerPage() {
     
     // Парсим данные QR-кода
     // Формат может быть: phone:79001234567, card:1234567890123456, payment:amount:phone:79001234567, или просто номер телефона/карты
-    let parsedData: { type: 'phone' | 'card' | 'unknown', value: string, amount?: number } = {
+    const parsedData: { type: 'phone' | 'card' | 'unknown', value: string, amount?: number } = {
       type: 'unknown',
       value: data
     }
@@ -261,7 +266,7 @@ export function QRScannerPage() {
       setScannedData(null)
       alert('✅ Платеж успешно выполнен!')
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setIsPaymentProcessing(false)
       alert(`❌ Ошибка: ${error?.message || 'Не удалось выполнить платеж'}`)
     }
@@ -276,7 +281,7 @@ export function QRScannerPage() {
   }
 
   // Генерируем данные для QR-кода
-  const userPhone = (user as any)?.phone || '79000000000'
+  const userPhone = user?.phone || '79000000000'
   const qrData = amount && parseFloat(amount) > 0
     ? `payment:${amount}:phone:${String(userPhone).replace(/[^\d]/g, '')}`
     : ''
@@ -520,13 +525,13 @@ function PaymentModal({
 }: {
   amount: string
   scannedData: string
-  accounts: any[]
+  accounts: Account[]
   onClose: () => void
   onPay: (fromAccountId: number, toPhone: string, amount: string, description: string) => void
   isLoading: boolean
 }) {
   const [selectedAccountId, setSelectedAccountId] = useState<number>(
-    accounts[0]?.id || accounts[0]?.accountId || 0
+    accounts[0]?.id || 0
   )
   const [description, setDescription] = useState('Оплата по QR-коду')
   const [paymentAmount, setPaymentAmount] = useState(amount)
@@ -640,7 +645,7 @@ function PaymentModal({
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
             >
               {accounts.map((acc) => (
-                <option key={`${acc.clientId}-${acc.accountId || (acc as any).id}`} value={(acc as any).id || acc.accountId}>
+                <option key={`${acc.clientId}-${acc.accountId || acc.id}`} value={acc.id || acc.accountId}>
                   {acc.accountName} ({acc.clientName})
                 </option>
               ))}
