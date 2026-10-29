@@ -19,3 +19,12 @@ export type GroupSettings = {
   maxGroups: number
   maxMembers: number
 }
+
+export type GroupMemberInfo = {
+  userId: number
+  name: string
+  email: string
+  avatarUrl?: string
+  role: string
+  joinedAt: string
+}

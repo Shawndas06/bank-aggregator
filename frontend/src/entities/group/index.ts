@@ -1,4 +1,4 @@
-export type { Group, Invitation, GroupSettings } from './model/types'
+export type { Group, Invitation, GroupSettings, GroupMemberInfo } from './model/types'
 export {
   useGetGroups,
   useGetGroupSettings,
@@ -11,4 +11,6 @@ export {
   useExitGroup,
   useGetGroupAccounts,
   useGetGroupBalance,
+  useGetGroupMembers,
 } from './api/groupApi'
+

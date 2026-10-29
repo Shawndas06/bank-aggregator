@@ -7,5 +7,16 @@ from src.models.referral import Referral, ReferralStatus
 from src.models.cashback import CashbackData, CashbackConsent
 from src.models.bank_subscription import BankSubscription, SubscriptionStatus, ServiceType
 from src.models.partner import Partner, PartnerTransaction, PartnerStatus
+from src.models.family_plan import (
+    FamilyObligation, FamilyContribution, PlanSharedResource,
+    ObligationStatus, ContributionStatus
+)
 
-__all__ = ["User", "BankAccount", "Group", "GroupMember", "Invitation", "OTPCode", "Referral", "ReferralStatus", "CashbackData", "CashbackConsent", "BankSubscription", "SubscriptionStatus", "ServiceType", "Partner", "PartnerTransaction", "PartnerStatus"]
+__all__ = [
+    "User", "BankAccount", "Group", "GroupMember", "Invitation", "OTPCode",
+    "Referral", "ReferralStatus", "CashbackData", "CashbackConsent",
+    "BankSubscription", "SubscriptionStatus", "ServiceType",
+    "Partner", "PartnerTransaction", "PartnerStatus",
+    "FamilyObligation", "FamilyContribution", "PlanSharedResource",
+    "ObligationStatus", "ContributionStatus",
+]
