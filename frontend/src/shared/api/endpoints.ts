@@ -35,5 +35,6 @@ export const ENDPOINTS = {
     INVITES: `${API_BASE_URL}/api/groups/invites`,
     INVITE_ACCEPT: `${API_BASE_URL}/api/groups/invite/accept`,
     INVITE_DECLINE: `${API_BASE_URL}/api/groups/invite/decline`,
+    MEMBERS: (groupId: number) => `${API_BASE_URL}/api/groups/${groupId}/members`,
   },
 } as const

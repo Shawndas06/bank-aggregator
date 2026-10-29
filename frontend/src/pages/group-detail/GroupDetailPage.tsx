@@ -10,7 +10,7 @@ import { GroupTransactions } from '@widgets/group-transactions'
 import { useGetGroups, useDeleteGroup, useExitGroup } from '@entities/group'
 import { useGetMe } from '@entities/user'
 import { Button, Dialog } from '@shared/ui'
-import { ArrowLeft, Trash2, LogOut } from 'lucide-react'
+import { ArrowLeft, Trash2, LogOut, Calendar } from 'lucide-react'
 import { ROUTES } from '@shared/config'
 
 export function GroupDetailPage() {
@@ -83,6 +83,30 @@ export function GroupDetailPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">{group.name}</h2>
             <GroupMembers groupId={groupId} ownerId={group.ownerId} currentUserId={user.id} />
+          </div>
+        </motion.div>
+
+        {/* Family Plan Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05, duration: 0.5 }}
+          className="mb-6 cursor-pointer rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white shadow-lg shadow-blue-500/20 hover:opacity-95 transition-opacity"
+          onClick={() => navigate(`${ROUTES.GROUPS}/${groupId}/plan`)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+                <span>✨ Новый сценарий</span>
+              </div>
+              <h3 className="text-lg font-bold">Семейный финансовый план</h3>
+              <p className="text-xs text-blue-100">
+                Обязательства, взносы, календарь остатка и прогноз кассового разрыва
+              </p>
+            </div>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+              <Calendar className="h-5 w-5 text-white" />
+            </div>
           </div>
         </motion.div>
 

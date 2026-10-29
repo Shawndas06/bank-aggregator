@@ -9,7 +9,7 @@ import type {
   GroupSettingsResponse,
   GroupAccountResponse,
 } from '@shared/api/types'
-import type { Group, Invitation, GroupSettings } from '../model/types'
+import type { Group, Invitation, GroupSettings, GroupMemberInfo } from '../model/types'
 import type { GroupAccount } from '@entities/account'
 import { useGetMe } from '@entities/user'
 
@@ -200,3 +200,15 @@ export function useGetGroupBalance(groupId: number) {
     enabled: !!groupId,
   })
 }
+
+export function useGetGroupMembers(groupId: number) {
+  return useQuery({
+    queryKey: ['group-members', groupId],
+    queryFn: async () => {
+      const data = await apiClient.get<GroupMemberInfo[]>(ENDPOINTS.GROUPS.MEMBERS(groupId))
+      return data
+    },
+    enabled: !!groupId,
+  })
+}
+
