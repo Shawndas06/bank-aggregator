@@ -1,22 +1,22 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { useQueries, useQuery } from '@tanstack/react-query'
-import { useGetAccounts } from '@entities/account/api/accountApi'
-import type { Transaction } from '@entities/transaction'
 import type { Account } from '@entities/account'
-import { Card, CardContent, Skeleton, Button } from '@shared/ui'
+import { useGetAccounts } from '@entities/account/api/accountApi'
+import {
+  bankTransaction,
+  paymentTransaction,
+  type TransactionWithAccount,
+} from '@entities/transaction/model/aggregate'
+import { apiClient, ENDPOINTS } from '@shared/api'
+import type { PaymentResponse, TransactionResponse } from '@shared/api/types'
+import { BANK_NAMES } from '@shared/config'
 import { formatCurrency } from '@shared/lib/utils'
-import { ArrowUpRight, ArrowDownRight, Clock, X } from 'lucide-react'
+import { Button, Card, CardContent, Skeleton } from '@shared/ui'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { BANK_NAMES } from '@shared/config'
-import { apiClient, ENDPOINTS } from '@shared/api'
-import type { TransactionResponse } from '@shared/api/types'
+import { motion } from 'framer-motion'
+import { ArrowDownRight, ArrowUpRight, Clock, X } from 'lucide-react'
+import { useState } from 'react'
 
-type TransactionWithAccount = Transaction & {
-  accountId: string
-  account: Account
-}
 
 export function TransactionsList() {
   const { data: accounts, isLoading: accountsLoading } = useGetAccounts()
@@ -72,7 +72,7 @@ function TransactionsContent({ accounts }: { accounts: Account[] }) {
     queryFn: async () => {
       try {
         // apiClient.get уже возвращает data из { success: true, data: [...] }
-        const response = await apiClient.get<any[]>('/api/payments/history?limit=50')
+        const response = await apiClient.get<PaymentResponse[]>('/api/payments/history?limit=50')
         // response уже является массивом платежей
         return Array.isArray(response) ? response : []
       } catch (error) {
@@ -84,62 +84,12 @@ function TransactionsContent({ accounts }: { accounts: Account[] }) {
   })
 
   // Объединяем транзакции из Bank API
-  const bankTransactions: TransactionWithAccount[] = transactionQueries
-    .flatMap((query, index) =>
-      (query.data || []).map((transaction: Transaction) => ({
-        ...transaction,
-        account: accounts[index],
-      }))
-    )
-
-  // Преобразуем внутренние платежи в формат транзакций
-  const internalTransactions: TransactionWithAccount[] = (paymentsData || [])
-    .filter((payment: any) => payment && payment.id) // Фильтруем пустые записи
-    .map((payment: any) => {
-      // Определяем, входящий это платеж или исходящий
-      const isIncoming = payment.isIncoming || false
-      
-      // Для входящих платежей находим счет получателя, для исходящих - отправителя
-      let account
-      if (isIncoming) {
-        // Для входящих платежей используем первый доступный счет (или можно найти по toUserId)
-        account = accounts[0]
-      } else {
-        // Для исходящих платежей находим счет по from_account_name
-        account = accounts.find(acc => acc.accountName === payment.fromAccountName) || accounts[0]
-      }
-      
-      if (!account) {
-        return null
-      }
-      
-      // Определяем тип платежа для описания
-      let description = payment.description
-      if (!description) {
-        if (payment.paymentType === 'TO_PERSON') {
-          if (isIncoming) {
-            description = `Перевод от ${payment.fromUserId ? 'пользователя' : payment.fromAccountName || ''}`
-          } else {
-            description = `Перевод ${payment.toName || payment.toPhone || ''}`
-          }
-        } else if (payment.paymentType === 'PREMIUM') {
-          description = 'Оплата Premium подписки'
-        } else {
-          description = 'Платеж'
-        }
-      }
-      
-      return {
-        id: `payment_${payment.id}`,
-        date: payment.completedAt || payment.createdAt,
-        description: description,
-        amount: isIncoming ? payment.amount : -payment.amount, // Положительное для входящих, отрицательное для исходящих
-        currency: payment.currency || 'RUB',
-        type: isIncoming ? 'credit' : 'debit',
-        account: account,
-      }
-    })
-    .filter((tx: any) => tx !== null) // Убираем null значения
+  const bankTransactions = transactionQueries.flatMap((query, index) =>
+    (query.data || []).map(transaction => bankTransaction(transaction, accounts[index])))
+  const internalTransactions = (paymentsData || []).flatMap(payment => {
+    const transaction = paymentTransaction(payment, accounts)
+    return transaction ? [transaction] : []
+  })
 
   // Объединяем все транзакции и сортируем по дате
   const allTransactions: TransactionWithAccount[] = [
@@ -254,8 +204,8 @@ function TransactionDetailsModal({
     queryKey: ['payment', paymentId],
     queryFn: async () => {
       if (!paymentId) return null
-      const response = await apiClient.get(`/api/payments/history?limit=100`)
-      return Array.isArray(response) ? response.find((p: any) => p.id === parseInt(paymentId)) : null
+      const response = await apiClient.get<PaymentResponse[]>(`/api/payments/history?limit=100`)
+      return Array.isArray(response) ? response.find((p) => p.id === parseInt(paymentId)) : null
     },
     enabled: !!paymentId && isInternalPayment,
   })

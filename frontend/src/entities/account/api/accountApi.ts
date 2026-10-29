@@ -1,23 +1,23 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient, ENDPOINTS } from '@shared/api'
 import type {
+  AccountCreateRequest,
   AccountResponse,
   BalanceResponse,
   TransactionResponse,
-  AccountCreateRequest,
 } from '@shared/api/types'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Account, Balance, Transaction } from '../model/types'
 
 function mapAccount(response: AccountResponse): Account {
   return {
-    id: (response as any).id,
+    id: response.id,
     accountId: response.accountId,
     clientId: response.clientId,
     clientName: response.clientName,
     accountName: response.accountName,
     isActive: response.isActive,
-    isHidden: (response as any).isHidden,
-    priority: (response as any).priority,
+    isHidden: response.isHidden,
+    priority: response.priority,
   }
 }
 

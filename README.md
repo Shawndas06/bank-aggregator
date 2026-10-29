@@ -65,7 +65,7 @@ bank-aggregator/
 ### Предварительные требования
 
 - **Docker** и **Docker Compose** установлены
-- **Node.js** 18+ и **npm/pnpm** (для frontend)
+- **Node.js** 22.12+ (22.x) и **npm** (для frontend)
 - **Python** 3.11+ (опционально, если запускаете backend без Docker)
 
 ### Быстрый старт
@@ -90,8 +90,8 @@ docker-compose up -d
 3. **Запустите Frontend:**
 ```bash
 cd frontend
-npm install  # или pnpm install
-npm run dev  # или pnpm dev
+npm ci
+npm run dev
 ```
 
 Frontend будет доступен на `http://localhost:5173`
@@ -268,3 +268,9 @@ alembic upgrade head
 **Сделано с ❤️ для VTB Hackathon 2025**
 
 
+
+## Проверки Pull Request
+
+Каждый push и PR запускает отдельные проверки CI: конфликты, TypeScript, ESLint, сборка, Python, расчёты, доступ, frontend-тесты, Chromium/PWA, PostgreSQL/Redis/API, зависимости и Docker. Итоговый `required` требует успеха всех заданий.
+
+Команды, ограничения покрытия и порядок работы с планом: [docs/ci.md](docs/ci.md). Основной менеджер frontend-зависимостей — npm; обновления фиксируются в `package-lock.json`.

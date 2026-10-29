@@ -1,14 +1,15 @@
+import { useGetAccounts } from '@entities/account'
+import { useGetMe } from '@entities/user'
+import { apiClient } from '@shared/api'
+import { Button, Card, CardContent } from '@shared/ui'
+import { Dialog } from '@shared/ui/dialog'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { motion } from 'framer-motion'
+import { ArrowLeft, BarChart, Check, Crown, Headphones, Users, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { useGetMe } from '@entities/user'
-import { Button, Card, CardContent } from '@shared/ui'
-import { apiClient } from '@shared/api'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useGetAccounts } from '@entities/account'
-import { Crown, Check, X, Zap, Users, BarChart, Headphones, ArrowLeft } from 'lucide-react'
 
 export function PremiumPage() {
   const navigate = useNavigate()
@@ -17,7 +18,7 @@ export function PremiumPage() {
   const queryClient = useQueryClient()
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const isPremium = user?.accountType === 'PREMIUM'
+  const isPremium = user?.accountType === 'premium'
 
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showErrorModal, setShowErrorModal] = useState(false)
@@ -34,8 +35,8 @@ export function PremiumPage() {
       queryClient.invalidateQueries({ queryKey: ['payments', 'history'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       // Обновляем балансы всех счетов
-      accounts?.forEach((acc: any) => {
-        queryClient.invalidateQueries({ queryKey: ['balances', acc.accountId, acc.clientId] })
+      accounts?.forEach((acc) => {
+        queryClient.invalidateQueries({ queryKey: ['balance', acc.accountId, acc.clientId] })
       })
       setIsProcessing(false)
       setTimeout(() => {
@@ -43,7 +44,7 @@ export function PremiumPage() {
         navigate('/profile')
       }, 2000)
     },
-    onError: (error: any) => {
+    onError: (error) => {
       setErrorMessage(error?.message || 'Недостаточно средств или попробуйте позже')
       setShowErrorModal(true)
       setIsProcessing(false)
@@ -99,13 +100,13 @@ export function PremiumPage() {
 
     setIsProcessing(true)
     // Находим счет с наивысшим приоритетом (приоритет 1 = первый)
-    const sortedAccounts = [...accounts].sort((a: any, b: any) => {
+    const sortedAccounts = [...accounts].sort((a, b) => {
       const priorityA = a.priority || 999
       const priorityB = b.priority || 999
       return priorityA - priorityB
     })
     
-    const accountToUse = sortedAccounts[0] as any
+    const accountToUse = sortedAccounts[0]
     const accountId = accountToUse.id || accountToUse.accountId
     
     if (!accountId) {
@@ -157,6 +158,8 @@ export function PremiumPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-blue-50 pb-20">
       <MobileHeader />
+      <Dialog isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} title="Ошибка оплаты" description={errorMessage} />
+      <Dialog isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} title="Premium подключён" description="Оплата успешно выполнена" />
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl">
         <button

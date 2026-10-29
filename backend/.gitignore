@@ -42,7 +42,6 @@ logs/
 .coverage
 htmlcov/
 
-# Docker
-.dockerignore
+# Docker build exclusions are versioned.
 
 .env

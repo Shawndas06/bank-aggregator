@@ -1,7 +1,6 @@
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Button } from '@shared/ui'
 import { ROUTES } from '@shared/config'
+import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 
 export function HomePage() {
   const navigate = useNavigate()

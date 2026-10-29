@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useQueries } from '@tanstack/react-query'
 import { useGetGroupAccounts } from '@entities/group'
-import { Card, CardContent, Skeleton, Button } from '@shared/ui'
-import { CreditCard, Building2, ChevronDown, ChevronUp } from 'lucide-react'
-import { BANK_NAMES } from '@shared/config'
-import { formatCurrency } from '@shared/lib/utils'
 import { apiClient, ENDPOINTS } from '@shared/api'
 import type { BalanceResponse } from '@shared/api/types'
+import { BANK_NAMES } from '@shared/config'
+import { formatCurrency } from '@shared/lib/utils'
+import { Button, Card, CardContent, Skeleton } from '@shared/ui'
+import { useQueries } from '@tanstack/react-query'
+import { Building2, ChevronDown, ChevronUp, CreditCard } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 type GroupAccountsProps = {
   groupId: number
@@ -96,7 +96,7 @@ export function GroupAccounts({ groupId }: GroupAccountsProps) {
                     <div>
                       <p className="font-medium text-gray-900">{account.accountName}</p>
                       <p className="text-xs text-gray-500">
-                        {BANK_NAMES[account.clientId as keyof typeof BANK_NAMES] ||
+                        {BANK_NAMES[Number(account.clientId) as keyof typeof BANK_NAMES] ||
                           account.clientName}{' '}
                         • {account.owner.name}
                       </p>

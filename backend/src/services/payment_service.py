@@ -2,6 +2,7 @@
 Сервис для работы с платежами
 """
 import logging
+from decimal import Decimal, InvalidOperation
 from sqlalchemy.orm import Session
 from typing import List, Optional, Tuple
 from datetime import datetime
@@ -16,6 +17,34 @@ logger = logging.getLogger(__name__)
 class PaymentService:
     """Сервис для управления платежами"""
     
+    @staticmethod
+    def _check_balance(db: Session, user_id: int, account: BankAccount, amount: float) -> Optional[str]:
+        """Reject payment creation whenever its funds cannot be verified."""
+        try:
+            requested = Decimal(str(amount))
+            if not requested.is_finite() or requested <= 0:
+                return "Сумма платежа должна быть положительным конечным числом"
+        except (InvalidOperation, ValueError, TypeError):
+            return "Некорректная сумма платежа"
+        try:
+            import redis
+            from src.services.account_service import AccountService
+            cache = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT,
+                                db=settings.REDIS_DB, password=settings.REDIS_PASSWORD or None,
+                                decode_responses=True)
+            data = AccountService(db, cache).get_account_balance(user_id, account.account_id, account.bank_id)
+            if not data or "amount" not in data:
+                return "Не удалось получить баланс счета"
+            balance = Decimal(str(data["amount"]))
+            if not balance.is_finite() or data.get("currency", "RUB") != "RUB":
+                return "Не удалось проверить рублёвый баланс счета"
+            if balance < requested:
+                return "Недостаточно средств на счете"
+        except Exception:
+            logger.exception("Не удалось проверить баланс перед платежом")
+            return "Не удалось проверить баланс счета. Повторите попытку позже"
+        return None
+
     @staticmethod
     def search_user_by_phone(db: Session, phone: str) -> Optional[User]:
         """Поиск пользователя по номеру телефона"""
@@ -74,35 +103,10 @@ class PaymentService:
             return None, f"Похожий платеж уже был создан недавно (ID: {recent_duplicate.id}). Пожалуйста, подождите несколько секунд."
         
         # Проверяем баланс перед переводом
-        try:
-            from src.services.account_service import AccountService
-            import redis
-            
-            redis_client = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                db=settings.REDIS_DB,
-                decode_responses=True
-            )
-            
-            account_service = AccountService(db, redis_client)
-            balance_data = account_service.get_account_balance(
-                user_id=user_id,
-                account_id=from_account.account_id,
-                bank_id=from_account.bank_id
-            )
-            
-            if not balance_data:
-                logger.warning(f"⚠️  Не удалось получить баланс, продолжаем без проверки")
-            else:
-                current_balance = balance_data.get("amount", 0)
-                if current_balance < amount:
-                    logger.error(f"❌ Недостаточно средств: баланс={current_balance}₽, требуется={amount}₽")
-                    return None, f"Недостаточно средств на счете. Текущий баланс: {current_balance}₽, требуется: {amount}₽"
-                logger.info(f"✅ Баланс проверен: {current_balance}₽ >= {amount}₽")
-        except Exception as e:
-            logger.warning(f"⚠️  Ошибка проверки баланса: {e}, продолжаем без проверки")
-        
+        balance_error = PaymentService._check_balance(db, user_id, from_account, amount)
+        if balance_error:
+            return None, balance_error
+
         # Создаем платеж
         payment = Payment(
             user_id=user_id,
@@ -129,7 +133,6 @@ class PaymentService:
             try:
                 import redis
                 import json
-                from src.config import settings
                 
                 redis_client = redis.Redis(
                     host=settings.REDIS_HOST,
@@ -240,40 +243,10 @@ class PaymentService:
             return None, "Счет отправителя не найден"
         
         # Проверяем баланс перед переводом
-        try:
-            from src.services.account_service import AccountService
-            import redis
-            
-            redis_client = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                db=settings.REDIS_DB,
-                decode_responses=True
-            )
-            
-            account_service = AccountService(db, redis_client)
-            balance_data = account_service.get_account_balance(
-                user_id=user_id,
-                account_id=from_account.account_id,
-                bank_id=from_account.bank_id
-            )
-            
-            if not balance_data:
-                return None, "Не удалось получить баланс счета"
-            
-            current_balance = balance_data.get("amount", 0)
-            
-            if current_balance < amount:
-                return None, f"Недостаточно средств на счете. Текущий баланс: {current_balance}₽, требуется: {amount}₽"
-            
-            logger.info(f"✅ Баланс проверен для перевода на карту: {current_balance}₽ >= {amount}₽")
-            
-        except Exception as e:
-            logger.error(f"Ошибка проверки баланса: {e}")
-            if not settings.DEBUG:
-                return None, f"Ошибка проверки баланса: {str(e)}"
-            logger.warning(f"⚠️  Продолжаем без проверки баланса (DEBUG режим)")
-        
+        balance_error = PaymentService._check_balance(db, user_id, from_account, amount)
+        if balance_error:
+            return None, balance_error
+
         payment = Payment(
             user_id=user_id,
             payment_type=PaymentType.CARD_TO_CARD,
@@ -298,7 +271,6 @@ class PaymentService:
             try:
                 import redis
                 import json
-                from src.config import settings
                 
                 redis_client = redis.Redis(
                     host=settings.REDIS_HOST,
@@ -358,40 +330,10 @@ class PaymentService:
             return None, "Счет отправителя не найден"
         
         # Проверяем баланс перед оплатой
-        try:
-            from src.services.account_service import AccountService
-            import redis
-            
-            redis_client = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                db=settings.REDIS_DB,
-                decode_responses=True
-            )
-            
-            account_service = AccountService(db, redis_client)
-            balance_data = account_service.get_account_balance(
-                user_id=user_id,
-                account_id=from_account.account_id,
-                bank_id=from_account.bank_id
-            )
-            
-            if not balance_data:
-                return None, "Не удалось получить баланс счета"
-            
-            current_balance = balance_data.get("amount", 0)
-            
-            if current_balance < amount:
-                return None, f"Недостаточно средств на счете. Текущий баланс: {current_balance}₽, требуется: {amount}₽"
-            
-            logger.info(f"✅ Баланс проверен для оплаты услуг: {current_balance}₽ >= {amount}₽")
-            
-        except Exception as e:
-            logger.error(f"Ошибка проверки баланса: {e}")
-            if not settings.DEBUG:
-                return None, f"Ошибка проверки баланса: {str(e)}"
-            logger.warning(f"⚠️  Продолжаем без проверки баланса (DEBUG режим)")
-        
+        balance_error = PaymentService._check_balance(db, user_id, from_account, amount)
+        if balance_error:
+            return None, balance_error
+
         # Маппинг типов
         type_map = {
             "mobile": PaymentType.MOBILE,
@@ -428,7 +370,6 @@ class PaymentService:
             try:
                 import redis
                 import json
-                from src.config import settings
                 
                 redis_client = redis.Redis(
                     host=settings.REDIS_HOST,
@@ -535,41 +476,10 @@ class PaymentService:
         logger.info(f"✅ Счет найден: id={from_account.id}, account_id={from_account.account_id}, bank_id={from_account.bank_id}")
         
         # ШАГ 2: Проверяем баланс счета
-        try:
-            from src.services.account_service import AccountService
-            import redis
-            
-            redis_client = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                db=settings.REDIS_DB,
-                decode_responses=True
-            )
-            
-            account_service = AccountService(db, redis_client)
-            balance_data = account_service.get_account_balance(
-                user_id=user_id,
-                account_id=from_account.account_id,
-                bank_id=from_account.bank_id
-            )
-            
-            if not balance_data:
-                return None, "Не удалось получить баланс счета"
-            
-            current_balance = balance_data.get("amount", 0)
-            
-            if current_balance < amount:
-                return None, f"Недостаточно средств на счете. Текущий баланс: {current_balance}₽, требуется: {amount}₽"
-            
-            logger.info(f"✅ Баланс проверен: {current_balance}₽ >= {amount}₽")
-            
-        except Exception as e:
-            logger.error(f"Ошибка проверки баланса: {e}")
-            # В режиме разработки продолжаем без проверки баланса
-            if not settings.DEBUG:
-                return None, f"Ошибка проверки баланса: {str(e)}"
-            logger.warning(f"⚠️  Продолжаем без проверки баланса (DEBUG режим)")
-        
+        balance_error = PaymentService._check_balance(db, user_id, from_account, amount)
+        if balance_error:
+            return None, balance_error
+
         # ШАГ 3: Отправляем запрос в систему списания (mock bank API)
         # В реальности здесь был бы запрос POST /payments через Bank API
         # Для mock просто логируем успешное списание
@@ -611,7 +521,6 @@ class PaymentService:
             try:
                 import redis
                 import json
-                from src.config import settings
                 
                 redis_client = redis.Redis(
                     host=settings.REDIS_HOST,

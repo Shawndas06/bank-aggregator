@@ -1,23 +1,24 @@
 import { cn } from '@shared/lib/utils'
-import { 
-  ShoppingCart, 
-  UtensilsCrossed, 
-  Car, 
-  Shirt, 
-  Heart, 
-  Gamepad2, 
-  Plane, 
-  Dumbbell, 
-  Sparkles, 
-  Phone, 
-  GraduationCap, 
-  Baby, 
-  Home, 
-  ArrowRightLeft, 
-  FileText 
+import type { LucideIcon } from 'lucide-react'
+import {
+  ArrowRightLeft,
+  Baby,
+  Car,
+  Dumbbell,
+  FileText,
+  Gamepad2,
+  GraduationCap,
+  Heart,
+  Home,
+  Phone,
+  Plane,
+  Shirt,
+  ShoppingCart,
+  Sparkles,
+  UtensilsCrossed,
 } from 'lucide-react'
 
-const categoryIcons: Record<string, any> = {
+const categoryIcons: Record<string, LucideIcon> = {
   groceries: ShoppingCart,
   restaurants: UtensilsCrossed,
   transport: Car,

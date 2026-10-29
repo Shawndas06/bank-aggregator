@@ -1,11 +1,13 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { Card, CardContent, Button, Input, Label } from '@shared/ui'
+import { createLoyaltyCard, getLoyaltyCards } from '@entities/account/api/loyaltyCards'
 import { apiClient } from '@shared/api'
+import type { LoyaltyCardCreate } from '@shared/api/types'
+import { Button, Card, CardContent, Input, Label } from '@shared/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Gift, Plus, X, CreditCard } from 'lucide-react'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { motion } from 'framer-motion'
+import { Gift, Plus } from 'lucide-react'
+import { useState } from 'react'
 
 export function LoyaltyCardsPage() {
   const [showAddForm, setShowAddForm] = useState(false)
@@ -19,30 +21,30 @@ export function LoyaltyCardsPage() {
   // Загрузка карт
   const { data: cardsData } = useQuery({
     queryKey: ['loyalty-cards'],
-    queryFn: () => apiClient.get('/api/loyalty-cards')
+    queryFn: getLoyaltyCards
   })
 
   const addCardMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post('/api/loyalty-cards', data),
-    onSuccess: (data: any) => {
+    mutationFn: (data: LoyaltyCardCreate) => createLoyaltyCard(data),
+    onSuccess: () => {
       const cardName = getCardTypeName(formData.cardType)
       alert(`✅ Успешно!\n\n${cardName} добавлена в ваш кошелек!`)
       queryClient.invalidateQueries({ queryKey: ['loyalty-cards'] })
       setShowAddForm(false)
       setFormData({ cardType: 'MAGNIT', cardNumber: '', cardName: '' })
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(`❌ Ошибка добавления карты\n\n${error?.message || 'Попробуйте позже'}`)
     }
   })
 
   const deleteCardMutation = useMutation({
     mutationFn: (cardId: number) => apiClient.delete(`/api/loyalty-cards/${cardId}`),
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       alert(`✅ Карта удалена!\n\nОна больше не отображается в списке`)
       queryClient.invalidateQueries({ queryKey: ['loyalty-cards'] })
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(`❌ Ошибка удаления карты\n\n${error?.message || 'Попробуйте позже'}`)
     }
   })
@@ -74,7 +76,7 @@ export function LoyaltyCardsPage() {
     })
   }
 
-  const loyaltyCards = cardsData?.cards || []
+  const loyaltyCards = cardsData || []
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -102,7 +104,7 @@ export function LoyaltyCardsPage() {
               </CardContent>
             </Card>
           ) : (
-            loyaltyCards.map((card: any) => (
+            loyaltyCards.map((card) => (
               <Card key={card.id}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">

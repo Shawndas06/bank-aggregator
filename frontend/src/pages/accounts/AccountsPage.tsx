@@ -1,22 +1,16 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { AccountList } from '@widgets/account-list'
-import { Button, Card, CardContent, Input, Label } from '@shared/ui'
+import type { Account } from '@entities/account'
 import { useGetAccounts } from '@entities/account'
+import { createLoyaltyCard, getLoyaltyCards } from '@entities/account/api/loyaltyCards'
 import { apiClient } from '@shared/api'
+import type { LoyaltyCardCreate } from '@shared/api/types'
+import { Button, Card, CardContent, Input, Label } from '@shared/ui'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  CreditCard, 
-  Gift, 
-  Plus, 
-  Eye, 
-  EyeOff, 
-  ArrowUpDown,
-  Sparkles,
-  X
-} from 'lucide-react'
+import { AccountList } from '@widgets/account-list'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { motion } from 'framer-motion'
+import { ArrowUpDown, Gift, Plus, Sparkles, X } from 'lucide-react'
+import { useState } from 'react'
 
 type ModalType = 'create-account' | 'loyalty-cards' | 'set-priority' | 'account-settings' | null
 
@@ -92,7 +86,7 @@ export function AccountsPage() {
           onClose={() => setActiveModal(null)}
           onSuccess={() => {
             setActiveModal(null)
-            queryClient.invalidateQueries(['accounts'])
+            queryClient.invalidateQueries({ queryKey: ['accounts'] })
           }}
         />
       )}
@@ -128,13 +122,6 @@ export function AccountsPage() {
   )
 }
 // Кнопка быстрого действия
-const actionButtonColors = {
-  blue: 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/30',
-  purple: 'bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/30',
-  pink: 'bg-gradient-to-br from-pink-500 to-rose-500 shadow-pink-500/30',
-  green: 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/30',
-  default: 'bg-gradient-to-br from-gray-500 to-gray-600 shadow-gray-500/30',
-}
 
 const actionButtonInlineStyles = {
   blue: { background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' },
@@ -164,19 +151,19 @@ function CreateAccountModal({ onClose, onSuccess }: { onClose: () => void, onSuc
   const [initialBalance, setInitialBalance] = useState('')
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return apiClient.post('/api/accounts/create-direct', {
+    mutationFn: async (data: {bankId: number; accountName: string; initialBalance: number}) => {
+      return apiClient.post<{account: {accountName: string}}>('/api/accounts/create-direct', {
         clientId: data.bankId,
         accountName: data.accountName,
         initialBalance: data.initialBalance
       })
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       const accountName = data?.account?.accountName || 'счет'
       alert(`✅ Успешно!\n\n${accountName} создан и готов к использованию!`)
       onSuccess()
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(`❌ Ошибка создания счета\n\n${error?.message || 'Попробуйте позже'}`)
     }
   })
@@ -280,7 +267,6 @@ function CreateAccountModal({ onClose, onSuccess }: { onClose: () => void, onSuc
 
 // Модалка карт лояльности
 function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
-  const [cards, setCards] = useState<any[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [formData, setFormData] = useState({
     cardType: 'MAGNIT',
@@ -292,18 +278,18 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
   // Загрузка карт
   const { data: cardsData } = useQuery({
     queryKey: ['loyalty-cards'],
-    queryFn: () => apiClient.get('/api/loyalty-cards')
+    queryFn: getLoyaltyCards
   })
 
   const addCardMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post('/api/loyalty-cards', data),
+    mutationFn: (data: LoyaltyCardCreate) => createLoyaltyCard(data),
     onSuccess: () => {
       alert('✅ Карта добавлена!')
-      queryClient.invalidateQueries(['loyalty-cards'])
+      queryClient.invalidateQueries({ queryKey: ['loyalty-cards'] })
       setShowAddForm(false)
       setFormData({ cardType: 'MAGNIT', cardNumber: '', cardName: '' })
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(error?.message || 'Ошибка добавления карты')
     }
   })
@@ -312,7 +298,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
     mutationFn: (cardId: number) => apiClient.delete(`/api/loyalty-cards/${cardId}`),
     onSuccess: () => {
       alert('✅ Карта удалена!')
-      queryClient.invalidateQueries(['loyalty-cards'])
+      queryClient.invalidateQueries({ queryKey: ['loyalty-cards'] })
     }
   })
 
@@ -332,7 +318,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
     })
   }
 
-  const loyaltyCards = cardsData?.cards || []
+  const loyaltyCards = cardsData || []
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
@@ -356,7 +342,7 @@ function LoyaltyCardsModal({ onClose }: { onClose: () => void }) {
               <p>У вас пока нет карт лояльности</p>
             </div>
           ) : (
-            loyaltyCards.map((card: any) => (
+            loyaltyCards.map((card) => (
               <Card key={card.id}>
                 <CardContent className="p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -465,7 +451,7 @@ function SetPriorityModal({
   onClose, 
   onSuccess 
 }: { 
-  accounts: any[], 
+  accounts: Account[],
   onClose: () => void, 
   onSuccess: () => void 
 }) {
@@ -498,7 +484,7 @@ function SetPriorityModal({
       alert('✅ Приоритеты обновлены!')
       onSuccess()
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(error?.message || 'Ошибка сохранения приоритетов')
     }
   })
@@ -576,12 +562,12 @@ function AccountSettingsModal({
   onClose,
   onSuccess
 }: {
-  accounts: any[]
+  accounts: Account[]
   onClose: () => void
   onSuccess: () => void
 }) {
   const [selectedAction, setSelectedAction] = useState<'rename' | 'sync' | 'hide' | null>(null)
-  const [selectedAccount, setSelectedAccount] = useState<any>(null)
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null)
   const [newName, setNewName] = useState('')
   const queryClient = useQueryClient()
 
@@ -594,7 +580,7 @@ function AccountSettingsModal({
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
       onSuccess()
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(error?.message || 'Ошибка переименования счета')
     }
   })
@@ -608,7 +594,7 @@ function AccountSettingsModal({
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
       onSuccess()
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(error?.message || 'Ошибка скрытия баланса')
     }
   })
@@ -622,7 +608,7 @@ function AccountSettingsModal({
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
       onSuccess()
     },
-    onError: (error: any) => {
+    onError: (error) => {
       alert(error?.message || 'Ошибка синхронизации счета')
     }
   })

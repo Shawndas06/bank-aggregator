@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@shared/api'
-import type { AnalyticsOverview, CategoryBreakdown } from '../model/types'
+import { useQuery } from '@tanstack/react-query'
+import type { AdvancedInsights, AnalyticsOverview, CategoryBreakdown } from '../model/types'
 
 export function useGetAnalyticsOverview() {
   return useQuery({
@@ -34,7 +34,7 @@ export function useGetAdvancedInsights() {
   return useQuery({
     queryKey: ['analytics', 'insights'],
     queryFn: async () => {
-      const data = await apiClient.get<any>('/api/analytics/insights')
+      const data = await apiClient.get<AdvancedInsights>('/api/analytics/insights')
       return data
     },
     retry: 2,

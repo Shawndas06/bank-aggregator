@@ -1,25 +1,26 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { Card, CardContent, Button, Input, Label } from '@shared/ui'
+import type { Account } from '@entities/account'
 import { useGetAccounts } from '@entities/account'
 import { apiClient } from '@shared/api'
+import { asError } from '@shared/lib/errors'
+import { Button, Input, Label } from '@shared/ui'
+import { Dialog } from '@shared/ui/dialog'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { motion } from 'framer-motion'
 import {
-  Smartphone,
-  Home,
-  Wifi,
-  CreditCard,
-  Users,
   Banknote,
   Building,
-  Tv,
+  CreditCard,
+  Home,
   Phone,
-  Zap,
+  Smartphone,
+  Tv,
+  Wifi,
   X,
-  Check,
+  Zap,
 } from 'lucide-react'
+import { useState } from 'react'
 
 type PaymentType = 'card-to-card' | 'to-person' | 'mobile' | 'utilities' | 'internet' | 'tv' | 'electricity' | null
 
@@ -193,9 +194,9 @@ function PaymentCard({ icon, label, color, onClick }: PaymentCardProps) {
 }
 
 // Модальное окно платежа
-function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts: any[], onClose: () => void }) {
+function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts: Account[], onClose: () => void }) {
   const [formData, setFormData] = useState({
-    fromAccountId: (accounts[0] as any)?.id || (accounts[0] as any)?.accountId || 0,
+    fromAccountId: accounts[0]?.id || 0,
     toPhone: '',
     toAccount: '',
     amount: '',
@@ -212,7 +213,7 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
   const [isProcessing, setIsProcessing] = useState(false)
 
   const paymentMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: typeof formData) => {
       if (isProcessing) {
         throw new Error('Платеж уже обрабатывается, пожалуйста, подождите')
       }
@@ -220,29 +221,29 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
       
       try {
         if (type === 'card-to-card') {
-          return apiClient.post('/api/payments/card-to-card', data)
+          return apiClient.post<{message?: string}>('/api/payments/card-to-card', data)
         } else if (type === 'to-person') {
           if (!data.fromAccountId || data.fromAccountId === 0) {
             throw new Error('Выберите счет для списания')
           }
-          return apiClient.post('/api/payments/transfer-by-phone', {
+          return apiClient.post<{message?: string}>('/api/payments/transfer-by-phone', {
             fromAccountId: data.fromAccountId,
             toPhone: data.toPhone,
             amount: parseFloat(data.amount),
             description: data.description || 'Перевод по номеру телефона'
           })
         } else if (type === 'mobile') {
-          return apiClient.post('/api/payments/mobile', data)
+          return apiClient.post<{message?: string}>('/api/payments/mobile', data)
         } else if (type === 'utilities') {
-          return apiClient.post('/api/payments/utility', data)
+          return apiClient.post<{message?: string}>('/api/payments/utility', data)
         }
         throw new Error('Неизвестный тип платежа')
       } finally {
         setIsProcessing(false)
       }
     },
-            onSuccess: (data: any) => {
-              setSuccessMessage(data.data?.message || 'Платеж успешно выполнен!')
+            onSuccess: (data) => {
+              setSuccessMessage(data.message || 'Платеж успешно выполнен!')
               setShowSuccessModal(true)
               setIsProcessing(false)
               // Обновляем историю платежей, транзакции и балансы
@@ -250,11 +251,11 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
               queryClient.invalidateQueries({ queryKey: ['accounts'] })
               queryClient.invalidateQueries({ queryKey: ['transactions'] })
               // Обновляем балансы всех счетов
-              accounts?.forEach((acc: any) => {
-                queryClient.invalidateQueries({ queryKey: ['balances', acc.accountId, acc.clientId] })
+              accounts?.forEach((acc) => {
+                queryClient.invalidateQueries({ queryKey: ['balance', acc.accountId, acc.clientId] })
               })
             },
-            onError: (error: any) => {
+            onError: (error) => {
               setErrorMessage(error?.message || 'Ошибка выполнения платежа')
               setShowErrorModal(true)
               setIsProcessing(false)
@@ -321,6 +322,7 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <Dialog isOpen={showErrorModal} onClose={() => setShowErrorModal(false)} title="Ошибка платежа" description={errorMessage} />
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -342,7 +344,7 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
             >
               {accounts.map((acc) => (
-                <option key={`${acc.clientId}-${acc.accountId || (acc as any).id}`} value={(acc as any).id || acc.accountId}>
+                <option key={`${acc.clientId}-${acc.accountId || acc.id}`} value={acc.id || acc.accountId}>
                   {acc.accountName} ({acc.clientName})
                 </option>
               ))}
@@ -381,7 +383,8 @@ function PaymentModal({ type, accounts, onClose }: { type: PaymentType, accounts
                       // Пока показываем информацию о реквизитах
                       setSuccessMessage(`Реквизиты для перевода:\n\nНомер карты: ${formData.toAccount}\n\nКарта может принимать переводы.`)
                       setShowSuccessModal(true)
-                    } catch (error: any) {
+                    } catch (caught) {
+      const error = asError(caught)
                       setErrorMessage(error?.message || 'Не удалось проверить карту')
                       setShowErrorModal(true)
                     }

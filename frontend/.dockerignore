@@ -52,4 +52,14 @@ PLAN.md
 # Misc
 .prettierrc
 .eslintrc*
-tsconfig.json
+
+.env.*
+!.env.example
+AGENTS.md
+.codex
+.agents
+
+playwright-report
+test-results
+browser
+tests

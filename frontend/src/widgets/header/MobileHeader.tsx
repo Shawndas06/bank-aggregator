@@ -1,7 +1,7 @@
 import { useGetMe } from '@entities/user'
 import { LoadingSpinner } from '@shared/ui'
 
-export function MobileHeader() {
+export function MobileHeader({title = 'Банк Агрегатор'}: {title?: string}) {
   const { data: user, isLoading } = useGetMe()
 
   return (
@@ -9,7 +9,7 @@ export function MobileHeader() {
       <div className="container flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4">
         <div className="min-w-0 flex-1">
           <h1 className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-lg sm:text-xl font-bold text-transparent truncate">
-            Банк Агрегатор
+            {title}
           </h1>
           {!isLoading && user && <p className="text-xs text-gray-600 truncate">{user.name}</p>}
         </div>

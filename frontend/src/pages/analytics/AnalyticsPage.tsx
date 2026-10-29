@@ -1,28 +1,30 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MobileHeader } from '@widgets/header'
-import { BottomNavigation } from '@widgets/bottom-navigation'
-import { Card, CardContent, Button, Progress } from '@shared/ui'
-import { useGetAnalyticsOverview, useGetCategoriesBreakdown, useGetAdvancedInsights } from '@entities/analytics'
+import {
+  useGetAdvancedInsights,
+  useGetAnalyticsOverview,
+  useGetCategoriesBreakdown,
+} from '@entities/analytics'
 import { useGetMe } from '@entities/user'
 import { formatCurrency } from '@shared/lib/utils'
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  PieChart,
-  Lightbulb,
-  Target,
-  Crown,
-  Lock,
+import { Button, Card, CardContent, Progress } from '@shared/ui'
+import { CategoryBadge } from '@shared/ui/category-icon'
+import { BottomNavigation } from '@widgets/bottom-navigation'
+import { MobileHeader } from '@widgets/header'
+import { motion } from 'framer-motion'
+import {
+  Activity,
   BarChart3,
   Calendar,
+  Crown,
+  Lightbulb,
+  Lock,
+  PieChart,
+  Target,
+  TrendingDown,
+  TrendingUp,
   TrendingUpIcon,
-  Activity
+  Wallet,
 } from 'lucide-react'
-import { CategoryBadge } from '@shared/ui/category-icon'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export function AnalyticsPage() {
@@ -33,8 +35,8 @@ export function AnalyticsPage() {
   const { data: user } = useGetMe()
   const navigate = useNavigate()
   
-  const isPremium = user?.accountType === 'PREMIUM'
-  const insights = insightsData?.data || insightsData
+  const isPremium = user?.accountType === 'premium'
+  const insights = insightsData
 
   if (isLoading) {
     return (
@@ -76,13 +78,12 @@ export function AnalyticsPage() {
     )
   }
 
-  const data = overview.data || overview
+  const data = overview
   const currentMonth = data.currentMonth || {}
   const topCategories = data.topCategories || []
   const totalBalance = data.totalBalance || 0
   const expenses = currentMonth.expenses || 0
   const income = currentMonth.income || 0
-  const expenseChange = currentMonth.expenseChange || 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 pb-20">
@@ -188,7 +189,7 @@ export function AnalyticsPage() {
           >
             <h3 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-gray-900">Топ категории расходов</h3>
             <div className="space-y-3">
-              {topCategories.map((cat: any) => (
+              {topCategories.map((cat) => (
                 <Card key={cat.category} className="bg-white/70 backdrop-blur-sm border-white/30 shadow-lg">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -224,7 +225,7 @@ export function AnalyticsPage() {
           >
             <h3 className="mb-4 text-lg font-semibold text-gray-900">Все категории</h3>
             <div className="space-y-3">
-              {categories.map((cat: any) => (
+              {categories.map((cat) => (
                 <Card key={cat.category} className="bg-white/70 backdrop-blur-sm border-white/30 shadow-lg">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -453,7 +454,7 @@ export function AnalyticsPage() {
             {/* Предупреждения */}
             {insights.warnings && insights.warnings.length > 0 && (
               <div className="space-y-2">
-                {insights.warnings.map((warning: any, index: number) => (
+                {insights.warnings.map((warning, index: number) => (
                   <Card key={index} className={`border-2 backdrop-blur-sm shadow-lg ${warning.type === 'critical' ? 'border-red-300/80 bg-red-50/90' : 'border-orange-300/80 bg-orange-50/90'}`}>
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
@@ -479,7 +480,7 @@ export function AnalyticsPage() {
             {/* Положительные выводы */}
             {insights.insights && insights.insights.length > 0 && (
               <div className="space-y-2">
-                {insights.insights.map((insight: any, index: number) => (
+                {insights.insights.map((insight, index: number) => (
                   <Card key={index} className="border-2 border-green-300/80 bg-green-50/90 backdrop-blur-sm shadow-lg">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
@@ -506,7 +507,7 @@ export function AnalyticsPage() {
                     Рекомендации
                   </h3>
                   <div className="space-y-2">
-                    {insights.recommendations.map((rec: any, index: number) => (
+                    {insights.recommendations.map((rec, index: number) => (
                       <div key={index} className="rounded-lg bg-white/90 backdrop-blur-sm p-3 shadow-md">
                         <h4 className="mb-1 font-medium text-gray-900">{rec.title}</h4>
                         <p className="text-sm text-gray-700">{rec.message}</p>
@@ -531,7 +532,7 @@ export function AnalyticsPage() {
                     Цели
                   </h3>
                   <div className="space-y-3">
-                    {insights.goals.map((goal: any, index: number) => (
+                    {insights.goals.map((goal, index: number) => (
                       <div key={index}>
                         <div className="mb-2 flex items-center justify-between">
                           <span className="text-sm font-medium text-white">{goal.title}</span>
