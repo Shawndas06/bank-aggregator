@@ -1,20 +1,19 @@
-FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+FROM node:22-alpine AS base
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 
 FROM base AS dependencies
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 FROM base AS development
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 EXPOSE 5173
-CMD ["pnpm", "run", "dev", "--host", "0.0.0.0"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 FROM dependencies AS builder
 COPY . .
-RUN pnpm run build
+RUN npm run build
 
 FROM nginx:alpine AS production
 RUN apk add --no-cache curl

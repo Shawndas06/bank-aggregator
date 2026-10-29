@@ -48,3 +48,11 @@ Thumbs.db
 *.tmp
 *.bak
 
+
+# Local configuration and agent memory
+.env
+.env.*
+!.env.example
+AGENTS.md
+.codex
+.agents

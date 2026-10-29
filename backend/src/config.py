@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     SMTP_ENABLED: bool = False
 
     TEAM_CLIENT_ID: str = "team222"
-    TEAM_CLIENT_SECRET: str = "Wl1F0L2aVHOPE20rM0DFeqvP9Qr2pgQT"
+    TEAM_CLIENT_SECRET: str = ""
 
     VBANK_BASE_URL: str = "https://vbank.open.bankingapi.ru"
     ABANK_BASE_URL: str = "https://abank.open.bankingapi.ru"

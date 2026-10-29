@@ -129,7 +129,6 @@ class PaymentService:
             try:
                 import redis
                 import json
-                from src.config import settings
                 
                 redis_client = redis.Redis(
                     host=settings.REDIS_HOST,
@@ -298,7 +297,6 @@ class PaymentService:
             try:
                 import redis
                 import json
-                from src.config import settings
                 
                 redis_client = redis.Redis(
                     host=settings.REDIS_HOST,
@@ -428,7 +426,6 @@ class PaymentService:
             try:
                 import redis
                 import json
-                from src.config import settings
                 
                 redis_client = redis.Redis(
                     host=settings.REDIS_HOST,
@@ -611,7 +608,6 @@ class PaymentService:
             try:
                 import redis
                 import json
-                from src.config import settings
                 
                 redis_client = redis.Redis(
                     host=settings.REDIS_HOST,

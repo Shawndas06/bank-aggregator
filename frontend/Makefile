@@ -5,16 +5,16 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 dev: ## Start dev server
-	@pnpm run dev
+	@npm run dev
 
 install: ## Install dependencies
-	@pnpm install
+	@npm ci
 
 build: ## Build production
-	@pnpm run build
+	@npm run build
 
 check: ## Run checks
-	@pnpm run check
+	@npm run check
 
 clean: ## Clean artifacts
 	@rm -rf node_modules dist .pnpm-store

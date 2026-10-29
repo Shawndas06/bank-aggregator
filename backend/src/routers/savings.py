@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from src.database import get_db
 from src.dependencies import get_current_user
 from src.models.user import User
+from src.models.savings_goal import SavingsGoal
 from src.services.savings_service import SavingsService
 from src.schemas.savings import (
     SavingsGoalCreate,
