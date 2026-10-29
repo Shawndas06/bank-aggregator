@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
-import { serviceWorkerSource } from '../build/service-worker.ts'
+import { serviceWorkerSource } from '../pwa/service-worker.ts'
 
 type Request = { url: string; method: string; mode?: string }
 type Event = {

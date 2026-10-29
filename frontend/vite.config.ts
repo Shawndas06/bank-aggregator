@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { pwa } from './build/pwa'
+import { pwa } from './pwa/pwa'
 import path from 'path'
 
 // https://vite.dev/config/
