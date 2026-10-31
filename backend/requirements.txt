@@ -69,8 +69,6 @@ pydantic-core==2.50.1
     # via pydantic
 pydantic-settings==2.16.2
     # via -r requirements.in
-pypng==0.20220715.0
-    # via qrcode
 python-barcode==0.16.1
     # via -r requirements.in
 python-dotenv==1.2.4
@@ -82,7 +80,7 @@ python-multipart==0.0.32
     # via -r requirements.in
 pyyaml==6.0.3
     # via uvicorn
-qrcode[pil]==7.4.2
+qrcode[pil]==8.2
     # via -r requirements.in
 redis==5.0.1
     # via -r requirements.in
@@ -103,7 +101,6 @@ typing-extensions==4.16.0
     #   pydantic
     #   pydantic-core
     #   pydantic-settings
-    #   qrcode
     #   sqlalchemy
     #   typing-inspection
 typing-inspection==0.4.4
