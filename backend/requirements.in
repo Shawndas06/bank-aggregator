@@ -14,6 +14,6 @@ email-validator==2.3.0
 httpx==0.28.1
 python-dotenv==1.2.4
 requests==2.34.2
-python-barcode==0.15.1
+python-barcode==0.16.1
 qrcode[pil]==7.4.2
 Pillow==13.0.0
