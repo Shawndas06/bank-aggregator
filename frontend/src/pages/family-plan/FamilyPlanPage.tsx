@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, Plus, CheckCircle, AlertTriangle, Clock,
-  TrendingDown, Users, Calendar, List, ChevronRight, X
+  ArrowLeft, Plus, CheckCircle, AlertTriangle,
+  Users, Calendar, List, X
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
