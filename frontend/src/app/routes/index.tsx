@@ -6,6 +6,7 @@ import { DashboardPage } from '@pages/dashboard'
 import { GroupDetailPage } from '@pages/group-detail'
 import { GroupTransactionsPage } from '@pages/group-transactions'
 import { GroupsPage } from '@pages/groups'
+import { FamilyPlanPage } from '@pages/family-plan'
 import { HomePage } from '@pages/home'
 import { LoyaltyCardsPage } from '@pages/loyalty-cards'
 import { PaymentsPage } from '@pages/payments'
@@ -57,6 +58,10 @@ export const router = createBrowserRouter([
   {
     path: `${ROUTES.GROUPS}/:id`,
     element: <GroupDetailPage />,
+  },
+  {
+    path: `${ROUTES.GROUPS}/:id/plan`,
+    element: <FamilyPlanPage />,
   },
   {
     path: `${ROUTES.GROUPS}/:id/transactions`,
